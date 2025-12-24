@@ -48,6 +48,10 @@ export interface ChatMessage {
   isLoadingAudio?: boolean;
   structurePlan?: StructureSection[];
   isLoadingStructure?: boolean;
+  // Error handling properties
+  isError?: boolean;
+  audioError?: boolean;
+  audioErrorMessage?: string;
 }
 
 export interface AudioAnalysisResult {

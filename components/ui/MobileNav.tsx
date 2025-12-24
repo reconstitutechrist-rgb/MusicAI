@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 
 // Inline SVG Icons
 const MusicIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -93,19 +93,52 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   const navRef = useRef<HTMLDivElement>(null);
   const firstFocusableRef = useRef<HTMLButtonElement>(null);
 
-  // Handle escape key
+  // Get all focusable elements within the nav
+  const getFocusableElements = useCallback(() => {
+    if (!navRef.current) return [];
+    return Array.from(
+      navRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((el) => !el.hasAttribute('disabled') && el.offsetParent !== null);
+  }, []);
+
+  // Handle escape key and focus trap
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
         onClose();
+        return;
+      }
+
+      // Focus trap - Tab key handling
+      if (e.key === 'Tab') {
+        const focusableElements = getFocusableElements();
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        // Shift+Tab from first element -> go to last
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        }
+        // Tab from last element -> go to first
+        else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, getFocusableElements]);
 
-  // Focus management
+  // Focus management - focus first element when opening
   useEffect(() => {
     if (isOpen && firstFocusableRef.current) {
       firstFocusableRef.current.focus();

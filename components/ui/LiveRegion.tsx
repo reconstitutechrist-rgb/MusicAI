@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
 
 interface LiveRegionContextType {
   announce: (message: string, type?: 'polite' | 'assertive') => void;
@@ -24,14 +24,30 @@ export const LiveRegionProvider: React.FC<LiveRegionProviderProps> = ({ children
   const [politeMessage, setPoliteMessage] = useState('');
   const [assertiveMessage, setAssertiveMessage] = useState('');
 
+  // Track pending timeouts to clean up on unmount
+  const politeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const assertiveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (politeTimeoutRef.current) clearTimeout(politeTimeoutRef.current);
+      if (assertiveTimeoutRef.current) clearTimeout(assertiveTimeoutRef.current);
+    };
+  }, []);
+
   const announce = useCallback((message: string, type: 'polite' | 'assertive' = 'polite') => {
     if (type === 'assertive') {
+      // Clear pending timeout to avoid race conditions
+      if (assertiveTimeoutRef.current) clearTimeout(assertiveTimeoutRef.current);
       // Clear first to ensure re-announcement of same message
       setAssertiveMessage('');
-      setTimeout(() => setAssertiveMessage(message), 50);
+      assertiveTimeoutRef.current = setTimeout(() => setAssertiveMessage(message), 50);
     } else {
+      // Clear pending timeout to avoid race conditions
+      if (politeTimeoutRef.current) clearTimeout(politeTimeoutRef.current);
       setPoliteMessage('');
-      setTimeout(() => setPoliteMessage(message), 50);
+      politeTimeoutRef.current = setTimeout(() => setPoliteMessage(message), 50);
     }
   }, []);
 

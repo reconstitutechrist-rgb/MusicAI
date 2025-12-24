@@ -1,18 +1,57 @@
 
-import { GoogleGenAI, GenerateContentResponse, Chat, Type, Modality } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse, Chat, Type, Modality, GenerateVideosOperation } from "@google/genai";
 import { LyricsAndConcept, SocialMarketingPackage, ChatMessage, SongData, StructureSection, AudioAnalysisResult } from '../types';
 
 let ai: GoogleGenAI;
 
+// Type-safe helper to get API key from environment
+const getApiKey = (): string => {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey || typeof apiKey !== 'string') {
+        throw new Error("VITE_GEMINI_API_KEY environment variable not set. Please add it to your .env file.");
+    }
+    return apiKey;
+};
+
+// Safe JSON parse helper with proper error handling
+const safeJsonParse = <T>(text: string, errorContext: string): T => {
+    try {
+        return JSON.parse(text) as T;
+    } catch (error) {
+        const parseError = error instanceof Error ? error.message : 'Unknown parse error';
+        throw new Error(`Failed to parse AI response for ${errorContext}: ${parseError}. Response text: ${text.substring(0, 200)}...`);
+    }
+};
+
 const getAi = () => {
     if (!ai) {
-        if (!process.env.API_KEY) {
-            throw new Error("API_KEY environment variable not set");
-        }
-        ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        ai = new GoogleGenAI({ apiKey: getApiKey() });
     }
     return ai;
 };
+
+// Type definitions for video generation payloads
+interface VideoGenerationConfig {
+    numberOfVideos: number;
+    resolution: '720p' | '1080p';
+    aspectRatio: '16:9' | '9:16' | '1:1';
+}
+
+interface VideoGenerationPayload {
+    model: string;
+    prompt: string;
+    config: VideoGenerationConfig;
+    image?: {
+        imageBytes: string;
+        mimeType: string;
+    };
+    video?: unknown;
+}
+
+interface ContentPart {
+    role: 'user' | 'model';
+    parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>;
+}
 
 export interface SongGenerationResponse {
     conversationalResponse: string;
@@ -65,7 +104,7 @@ export const generateOrRefineSong = async (history: ChatMessage[]): Promise<Song
     });
 
     const text = result.text.trim();
-    return JSON.parse(text);
+    return safeJsonParse<SongGenerationResponse>(text, 'song generation');
 };
 
 
@@ -100,7 +139,7 @@ export const generateLyricsAndConcept = async (prompt: string): Promise<LyricsAn
     });
 
     const text = result.text.trim();
-    return JSON.parse(text);
+    return safeJsonParse<LyricsAndConcept>(text, 'lyrics and concept generation');
 };
 
 export const generateSongStructure = async (lyrics: string, style: string): Promise<StructureSection[]> => {
@@ -140,7 +179,10 @@ export const generateSongStructure = async (lyrics: string, style: string): Prom
     });
 
     const text = result.text.trim();
-    const parsed = JSON.parse(text);
+    const parsed = safeJsonParse<{ sections: StructureSection[] }>(text, 'song structure generation');
+    if (!parsed.sections || !Array.isArray(parsed.sections)) {
+        throw new Error('Invalid song structure response: missing sections array');
+    }
     return parsed.sections;
 };
 
@@ -191,16 +233,19 @@ export const generateInstrumentalTrack = async (songStyle: string, referenceAudi
     - Do NOT include any parenthetical instructions like "(drums start)" or "(piano enters)". ONLY output the performable sounds themselves.
     
     Example Output for Hip Hop: "Buh - Tss - Buh - Buh - Tss... (Vummmmmm)... Ki-ka-buh... Laaa-da-da..."
-    
+
     Output the script now.`;
 
-    const contents: any[] = [{ role: 'user', parts: [{ text: producerPrompt }] }];
+    const contents: ContentPart[] = [{ role: 'user', parts: [{ text: producerPrompt }] }];
 
     // If reference audio is provided, we feed it to the Pro model so it can analyze the vibe and structure.
     if (referenceAudio) {
          contents[0].parts.unshift({ inlineData: { data: referenceAudio.base64, mimeType: referenceAudio.mimeType }});
          producerPrompt += `\n\nAlso, analyze the attached audio reference. Incorporate similar rhythmic patterns and energy into your phonetic script.`;
-         contents[0].parts[1].text = producerPrompt;
+         const textPart = contents[0].parts[1];
+         if (textPart && 'text' in textPart) {
+             textPart.text = producerPrompt;
+         }
     }
 
     const detailedPromptResponse = await ai.models.generateContent({
@@ -313,7 +358,10 @@ export const generateLineAlternatives = async (line: string, type: string): Prom
             responseSchema: responseSchema
         }
     });
-    const parsed = JSON.parse(response.text.trim());
+    const parsed = safeJsonParse<{ alternatives: string[] }>(response.text.trim(), 'line alternatives generation');
+    if (!parsed.alternatives || !Array.isArray(parsed.alternatives)) {
+        throw new Error('Invalid alternatives response: missing alternatives array');
+    }
     return parsed.alternatives;
 };
 
@@ -348,8 +396,8 @@ export const analyzeAudioTrack = async (audioBase64: string, mimeType: string): 
             responseSchema: responseSchema
         }
     });
-    
-    return JSON.parse(response.text.trim());
+
+    return safeJsonParse<AudioAnalysisResult>(response.text.trim(), 'audio track analysis');
 };
 
 
@@ -385,8 +433,11 @@ export const generateImage = async (prompt: string, aspectRatio: "1:1" | "16:9" 
         },
     });
 
-    const base64ImageBytes = response.generatedImages[0].image.imageBytes;
-    return `data:image/jpeg;base64,${base64ImageBytes}`;
+    const generatedImage = response.generatedImages?.[0];
+    if (!generatedImage?.image?.imageBytes) {
+        throw new Error('Image generation failed: No image data returned from the AI model.');
+    }
+    return `data:image/jpeg;base64,${generatedImage.image.imageBytes}`;
 };
 
 export const editImage = async (prompt: string, imageBase64: string, mimeType: string): Promise<string> => {
@@ -426,9 +477,9 @@ export const analyzeImage = async (prompt: string, imageBase64: string, mimeType
 
 export const generateVideo = async (prompt: string, aspectRatio: '16:9' | '9:16' | '1:1', resolution: '720p' | '1080p', image?: { base64: string, mimeType: string }) => {
     // A new instance must be created to use the latest API key from the selection dialog.
-    const aiWithUserKey = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
-    const requestPayload: any = {
+    const aiWithUserKey = new GoogleGenAI({ apiKey: getApiKey() });
+
+    const requestPayload: VideoGenerationPayload = {
         model: 'veo-3.1-fast-generate-preview',
         prompt: prompt,
         config: {
@@ -448,14 +499,14 @@ export const generateVideo = async (prompt: string, aspectRatio: '16:9' | '9:16'
     return await aiWithUserKey.models.generateVideos(requestPayload);
 };
 
-export const extendVideo = async (prompt: string, previousOperation: any, aspectRatio: '16:9' | '9:16' | '1:1') => {
-    const aiWithUserKey = new GoogleGenAI({ apiKey: process.env.API_KEY });
+export const extendVideo = async (prompt: string, previousOperation: GenerateVideosOperation, aspectRatio: '16:9' | '9:16' | '1:1') => {
+    const aiWithUserKey = new GoogleGenAI({ apiKey: getApiKey() });
     const previousVideo = previousOperation.response?.generatedVideos?.[0]?.video;
     if (!previousVideo) {
         throw new Error("No previous video found in the operation to extend.");
     }
 
-    const requestPayload: any = {
+    const requestPayload: VideoGenerationPayload = {
         model: 'veo-3.1-generate-preview', // This model is required for extension
         prompt: prompt,
         video: previousVideo,
@@ -469,9 +520,9 @@ export const extendVideo = async (prompt: string, previousOperation: any, aspect
     return await aiWithUserKey.models.generateVideos(requestPayload);
 };
 
-export const pollVideoOperation = async (operation: any) => {
+export const pollVideoOperation = async (operation: GenerateVideosOperation) => {
     // A new instance must be created to use the latest API key from the selection dialog.
-    const aiWithUserKey = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const aiWithUserKey = new GoogleGenAI({ apiKey: getApiKey() });
     return await aiWithUserKey.operations.getVideosOperation({ operation: operation });
 };
 
@@ -573,7 +624,7 @@ export const generateMarketingPackage = async (lyrics: string, concept: string, 
         }
     });
     const text = result.text.trim();
-    return JSON.parse(text);
+    return safeJsonParse<SocialMarketingPackage>(text, 'marketing package generation');
 };
 
 
@@ -670,15 +721,18 @@ export const summarizeConversationForVideo = async (history: ChatMessage[]): Pro
     });
 
     try {
-        const parsed = JSON.parse(result.text.trim());
-        if (Array.isArray(parsed.scenes) && parsed.scenes.every((s: any) => typeof s === 'string') && parsed.scenes.length > 0) {
-            return parsed.scenes;
+        const parsed = safeJsonParse<{ scenes: unknown[] }>(result.text.trim(), 'video scene summarization');
+        if (Array.isArray(parsed.scenes) && parsed.scenes.every((s: unknown) => typeof s === 'string') && parsed.scenes.length > 0) {
+            return parsed.scenes as string[];
         }
+        throw new Error("The AI returned an invalid or empty list of scene prompts.");
     } catch (e) {
+        if (e instanceof Error && e.message.includes('Failed to parse')) {
+            throw e; // Re-throw safeJsonParse errors
+        }
         console.error("Failed to parse scene prompts JSON:", result.text);
         throw new Error("The AI returned an invalid format for the scene prompts.");
     }
-    throw new Error("The AI returned an invalid or empty list of scene prompts.");
 };
 
 export const generateChatTitle = async (firstMessage: string): Promise<string> => {

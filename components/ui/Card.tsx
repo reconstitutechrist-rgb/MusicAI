@@ -1,4 +1,4 @@
-import React from "react";
+import React, { KeyboardEvent } from "react";
 
 interface CardProps {
   children: React.ReactNode;
@@ -50,14 +50,27 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   onClick,
   active = false,
 }) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
+  const isInteractive = !!onClick;
+
   return (
     <div
       onClick={onClick}
+      onKeyDown={handleKeyDown}
+      role={isInteractive ? "button" : undefined}
+      tabIndex={isInteractive ? 0 : undefined}
+      aria-pressed={isInteractive ? active : undefined}
       className={`
-        glass rounded-2xl p-6 cursor-pointer transition-all duration-300 ease-out
+        glass rounded-2xl p-6 transition-all duration-300 ease-out
         hover-lift border-dance group
         ${active ? "ring-2 ring-indigo-500 bg-indigo-500/10" : ""}
-        ${onClick ? "cursor-pointer" : ""}
+        ${isInteractive ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900" : ""}
       `}
     >
       <div className="flex items-start gap-4">
@@ -70,6 +83,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
               : "bg-gray-700/50 text-gray-400 group-hover:bg-indigo-500/20 group-hover:text-indigo-400"
           }
         `}
+          aria-hidden="true"
         >
           {icon}
         </div>

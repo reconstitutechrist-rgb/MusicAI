@@ -7,6 +7,36 @@
 
 const ELEVENLABS_API_BASE = 'https://api.elevenlabs.io/v1';
 
+// Default timeout for API requests (5 minutes for music generation which can take time)
+const DEFAULT_TIMEOUT_MS = 300000;
+
+/**
+ * Fetch wrapper with timeout support
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Request timed out after ${timeoutMs / 1000} seconds. The music generation may be taking longer than expected.`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export interface MusicGenerationOptions {
   prompt: string;              // Description of the music to generate (up to 4100 chars)
   durationMs?: number;         // 3000 - 300000 ms (3 sec - 5 min)
@@ -51,7 +81,7 @@ export async function generateMusic(
 
   onProgress?.('Starting music generation...');
 
-  const response = await fetch(`${ELEVENLABS_API_BASE}/music`, {
+  const response = await fetchWithTimeout(`${ELEVENLABS_API_BASE}/music`, {
     method: 'POST',
     headers: {
       'xi-api-key': apiKey,
@@ -108,7 +138,7 @@ export async function generateMusicWithPlan(
 
   onProgress?.('Starting composition...');
 
-  const response = await fetch(`${ELEVENLABS_API_BASE}/music`, {
+  const response = await fetchWithTimeout(`${ELEVENLABS_API_BASE}/music`, {
     method: 'POST',
     headers: {
       'xi-api-key': apiKey,
@@ -121,7 +151,8 @@ export async function generateMusicWithPlan(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `Composition failed: ${response.status}`);
+    const detail = (errorData as { detail?: string }).detail;
+    throw new Error(detail || `Composition failed: ${response.status}`);
   }
 
   onProgress?.('Processing audio...');

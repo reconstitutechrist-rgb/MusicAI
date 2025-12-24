@@ -122,25 +122,56 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({ audioUrl }) => {
 
   useEffect(() => {
     if (!audioUrl) return;
-    let audioContext: AudioContext | null = new (window.AudioContext || (window as any).webkitAudioContext)();
-    
-    fetch(audioUrl)
-      .then(response => response.arrayBuffer())
-      .then(arrayBuffer => audioContext?.decodeAudioData(arrayBuffer))
-      .then(decodedBuffer => {
-        if (decodedBuffer) {
-          audioBufferRef.current = decodedBuffer;
-          drawWaveform(decodedBuffer);
-          if (audioRef.current) {
-              setDuration(decodedBuffer.duration);
-          }
+
+    // Feature detection for AudioContext
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) {
+      console.warn("AudioContext not supported in this browser");
+      return;
+    }
+
+    let audioContext: AudioContext | null = null;
+    let isCancelled = false;
+
+    const loadAudio = async () => {
+      try {
+        audioContext = new AudioContextClass();
+        const response = await fetch(audioUrl);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch audio: ${response.status} ${response.statusText}`);
         }
-      })
-      .catch(error => console.error("Error loading audio for waveform:", error));
-    
+
+        const arrayBuffer = await response.arrayBuffer();
+
+        if (isCancelled || !audioContext) return;
+
+        const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+        if (isCancelled) return;
+
+        audioBufferRef.current = decodedBuffer;
+        drawWaveform(decodedBuffer);
+        if (audioRef.current) {
+          setDuration(decodedBuffer.duration);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          console.error("Error loading audio for waveform:", error);
+        }
+      }
+    };
+
+    loadAudio();
+
     return () => {
-      audioContext?.close().catch(e => console.error(e));
-      audioContext = null;
+      isCancelled = true;
+      if (audioContext) {
+        audioContext.close().catch(() => {
+          // Ignore errors when closing - browser may not support close()
+        });
+        audioContext = null;
+      }
     };
   }, [audioUrl, drawWaveform]);
   
@@ -151,7 +182,12 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({ audioUrl }) => {
     const setAudioData = () => {
         setDuration(audio.duration);
         setCurrentTime(audio.currentTime);
-    }
+    };
+
+    // FIX: Create stable function reference to avoid memory leak
+    const handleTimeUpdate = () => {
+        setCurrentTime(audio.currentTime);
+    };
 
     const handlePlay = () => {
         setIsPlaying(true);
@@ -173,21 +209,21 @@ const WaveformPlayer: React.FC<WaveformPlayerProps> = ({ audioUrl }) => {
     };
 
     audio.addEventListener('loadedmetadata', setAudioData);
-    audio.addEventListener('timeupdate', () => setCurrentTime(audio.currentTime));
+    audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnd);
-    
+
     return () => {
         audio.removeEventListener('loadedmetadata', setAudioData);
-        audio.removeEventListener('timeupdate', () => setCurrentTime(audio.currentTime));
+        audio.removeEventListener('timeupdate', handleTimeUpdate);
         audio.removeEventListener('play', handlePlay);
         audio.removeEventListener('pause', handlePause);
         audio.removeEventListener('ended', handleEnd);
         if(animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current);
         }
-    }
+    };
   }, [animate, drawProgress, duration]);
   
   const togglePlayPause = () => {
