@@ -9,6 +9,12 @@ import {
   generateSongStructure,
   generateSpeech,
 } from "../../services/geminiService";
+import {
+  isElevenLabsConfigured,
+  generateInstrumental,
+  generateSongWithLyrics,
+  createAudioUrl,
+} from "../../services/elevenLabsMusicService";
 import { ChatMessage, SongData, StructureSection } from "../../types";
 import WaveformPlayer from "../ui/WaveformPlayer";
 
@@ -169,7 +175,8 @@ const DownloadIcon = (props: React.SVGProps<SVGSVGElement>) => (
 const MultiTrackPlayer: React.FC<{
   instrumentalUrl: string;
   vocalUrl: string;
-}> = ({ instrumentalUrl, vocalUrl }) => {
+  format?: 'mp3' | 'wav';
+}> = ({ instrumentalUrl, vocalUrl, format = 'wav' }) => {
   const instRef = useRef<HTMLAudioElement>(null);
   const vocalRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -272,14 +279,14 @@ const MultiTrackPlayer: React.FC<{
       <div className="mt-3 pt-2 border-t border-gray-700 flex justify-end gap-3">
         <a
           href={instrumentalUrl}
-          download="instrumental.wav"
+          download={`instrumental.${format}`}
           className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
         >
           <DownloadIcon className="w-3 h-3" /> Inst
         </a>
         <a
           href={vocalUrl}
-          download="vocals.wav"
+          download={`vocals.${format}`}
           className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
         >
           <DownloadIcon className="w-3 h-3" /> Vox
@@ -327,6 +334,8 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
     undefined
   );
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const [generationProgress, setGenerationProgress] = useState<string>("");
+  const [useElevenLabsApi] = useState<boolean>(isElevenLabsConfigured());
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -337,14 +346,17 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
 
   useEffect(() => {
     if (!audioContext) {
+      // Use 44100Hz for better quality when using ElevenLabs (44.1kHz stereo output)
+      // Falls back to 24000Hz compatible with Gemini if needed
+      const sampleRate = useElevenLabsApi ? 44100 : 24000;
       const context = new (window.AudioContext ||
-        (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        (window as any).webkitAudioContext)({ sampleRate });
       setAudioContext(context);
     }
     return () => {
       audioContext?.close();
     };
-  }, [audioContext]);
+  }, [audioContext, useElevenLabsApi]);
 
   const handleChatSend = async (overrideInput?: string) => {
     const inputToSend = overrideInput || chatInput;
@@ -450,33 +462,62 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
       try {
         if (audioContext.state === "suspended") await audioContext.resume();
 
-        // Generate Instrumental and Vocals in parallel
-        const [base64Instrumental, base64Vocal] = await Promise.all([
-          generateInstrumentalTrack(message.songData.style),
-          generateSpeech(message.songData.lyrics, "Kore"), // Default to Kore for initial demo
-        ]);
+        let instUrl: string;
+        let vocUrl: string;
 
-        // Decode Instrumental
-        const instBytes = decode(base64Instrumental);
-        const instBuffer = await decodeAudioData(
-          instBytes,
-          audioContext,
-          24000,
-          1
-        );
-        const instBlob = bufferToWave(instBuffer);
-        const instUrl = URL.createObjectURL(instBlob);
+        if (useElevenLabsApi) {
+          // Use ElevenLabs API for high-quality 44.1kHz stereo music
+          setGenerationProgress("Generating instrumental track...");
 
-        // Decode Vocals
-        const vocBytes = decode(base64Vocal);
-        const vocBuffer = await decodeAudioData(
-          vocBytes,
-          audioContext,
-          24000,
-          1
-        );
-        const vocBlob = bufferToWave(vocBuffer);
-        const vocUrl = URL.createObjectURL(vocBlob);
+          // Generate instrumental track with ElevenLabs
+          const instrumentalBlob = await generateInstrumental(
+            `${message.songData.style} instrumental track`,
+            60000, // 1 minute
+            (status) => setGenerationProgress(status)
+          );
+          instUrl = createAudioUrl(instrumentalBlob);
+
+          // Generate full song with vocals using ElevenLabs
+          setGenerationProgress("Generating vocal track...");
+          const vocalBlob = await generateSongWithLyrics(
+            message.songData.lyrics,
+            message.songData.style,
+            60000, // 1 minute
+            (status) => setGenerationProgress(status)
+          );
+          vocUrl = createAudioUrl(vocalBlob);
+
+          setGenerationProgress("");
+        } else {
+          // Use Gemini API (fallback - lower quality 24kHz mono)
+          // Generate Instrumental and Vocals in parallel
+          const [base64Instrumental, base64Vocal] = await Promise.all([
+            generateInstrumentalTrack(message.songData.style),
+            generateSpeech(message.songData.lyrics, "Kore"),
+          ]);
+
+          // Decode Instrumental
+          const instBytes = decode(base64Instrumental);
+          const instBuffer = await decodeAudioData(
+            instBytes,
+            audioContext,
+            24000,
+            1
+          );
+          const instBlob = bufferToWave(instBuffer);
+          instUrl = URL.createObjectURL(instBlob);
+
+          // Decode Vocals
+          const vocBytes = decode(base64Vocal);
+          const vocBuffer = await decodeAudioData(
+            vocBytes,
+            audioContext,
+            24000,
+            1
+          );
+          const vocBlob = bufferToWave(vocBuffer);
+          vocUrl = URL.createObjectURL(vocBlob);
+        }
 
         setLatestAudioUrl(instUrl);
         setLatestVocalUrl(vocUrl);
@@ -495,6 +536,7 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
         );
       } catch (e) {
         console.error(e);
+        setGenerationProgress("");
         setChatMessages((prev) =>
           prev.map((msg, idx) =>
             idx === messageIndex
@@ -510,7 +552,7 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
         );
       }
     },
-    [chatMessages, audioContext]
+    [chatMessages, audioContext, useElevenLabsApi]
   );
 
   const handleGenerateStructure = useCallback(
@@ -644,35 +686,43 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
 
                       <div className="mt-4">
                         {msg.isLoadingAudio ? (
-                          <div className="flex items-center justify-center p-3 bg-gray-800 rounded-lg">
-                            <svg
-                              className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              ></circle>
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              ></path>
-                            </svg>
-                            <span>
-                              Generating Full Song Demo (Inst + Vox)...
-                            </span>
+                          <div className="flex flex-col items-center justify-center p-4 bg-gray-800 rounded-lg">
+                            <div className="flex items-center">
+                              <svg
+                                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                ></circle>
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                              </svg>
+                              <span>
+                                {generationProgress || "Generating Full Song Demo..."}
+                              </span>
+                            </div>
+                            {useElevenLabsApi && (
+                              <p className="text-xs text-gray-500 mt-2">
+                                Using ElevenLabs for high-quality audio (this may take 30-60 seconds)
+                              </p>
+                            )}
                           </div>
                         ) : msg.audioUrl && msg.vocalUrl ? (
                           <MultiTrackPlayer
                             instrumentalUrl={msg.audioUrl}
                             vocalUrl={msg.vocalUrl}
+                            format={useElevenLabsApi ? 'mp3' : 'wav'}
                           />
                         ) : (
                           <Button

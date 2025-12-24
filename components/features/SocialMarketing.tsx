@@ -153,7 +153,10 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({ lyrics, songConcept }
             }
 
             if (operation.error) {
-                throw new Error(operation.error.message || 'The video operation failed.');
+                const errorMsg = typeof operation.error === 'object' && operation.error !== null && 'message' in operation.error
+                    ? String(operation.error.message)
+                    : 'The video operation failed.';
+                throw new Error(errorMsg);
             }
 
             const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;

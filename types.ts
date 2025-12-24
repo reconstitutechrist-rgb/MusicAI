@@ -58,3 +58,32 @@ export interface AudioAnalysisResult {
   productionFeedback: string;
   mood: string;
 }
+
+// Audio Production Types
+export interface TrackFX {
+  eqLow: number;   // -10 to 10 dB
+  eqMid: number;   // -10 to 10 dB
+  eqHigh: number;  // -10 to 10 dB
+  reverb: number;  // 0 to 1
+  delay: number;   // 0 to 1
+}
+
+export interface EQBand {
+  id: string;
+  frequency: number;  // 20-20000 Hz
+  gain: number;       // -12 to +12 dB
+  q: number;          // 0.1 to 10
+  type: BiquadFilterType;
+  enabled: boolean;
+}
+
+export interface FXPreset {
+  id: string;
+  name: string;
+  vocalFX: TrackFX;
+  harmonyFX: TrackFX;
+  volumes: { inst: number; vocal: number; harmony: number };
+  isBuiltIn?: boolean;
+}
+
+// Note: TrackConfig is defined in utils/audioExport.ts for audio export functionality
