@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Page from '../ui/Page';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
-import { generateSpeech, processAudioTrack, generateInstrumentalTrack } from '../../services/geminiService';
+import { generateSpeech, processAudioTrack, generateInstrumentalTrack, analyzeAudioTrack } from '../../services/geminiService';
 import WaveformPlayer from '../ui/WaveformPlayer';
 import VuMeter from '../ui/VuMeter';
 import ParametricEQ, { DEFAULT_EQ_BANDS, type EQBand } from '../ui/ParametricEQ';
@@ -11,6 +11,10 @@ import SpectrumAnalyzer from '../ui/SpectrumAnalyzer';
 import LufsMeter, { type LufsPreset } from '../ui/LufsMeter';
 import StereoFieldVisualizer from '../ui/StereoFieldVisualizer';
 import MultibandCompressor, { DEFAULT_MULTIBAND_SETTINGS, type MultibandCompressorSettings } from '../ui/MultibandCompressor';
+import MasteringAssistant, { type MasteringSuggestions } from '../ui/MasteringAssistant';
+import ChordSuggestions from '../ui/ChordSuggestions';
+import StemSeparator from '../ui/StemSeparator';
+import { AudioAnalysisResult } from '../../types';
 import {
   bufferToWavBlob,
   downloadBlob,
@@ -312,6 +316,14 @@ const AudioProduction: React.FC<AudioProductionProps> = ({ lyrics, instrumentalU
   const [isGeneratingInstrumental, setIsGeneratingInstrumental] = useState(false);
   const [instrumentalStyle, setInstrumentalStyle] = useState('');
   const [instrumentalError, setInstrumentalError] = useState('');
+
+  // AI Tools State
+  const [showAITools, setShowAITools] = useState(false);
+  const [audioAnalysis, setAudioAnalysis] = useState<AudioAnalysisResult | null>(null);
+  const [isAnalyzingAudio, setIsAnalyzingAudio] = useState(false);
+  const [showMasteringAssistant, setShowMasteringAssistant] = useState(true);
+  const [showChordSuggestions, setShowChordSuggestions] = useState(true);
+  const [showStemSeparator, setShowStemSeparator] = useState(false);
 
   // Refs for Audio Elements and Web Audio Graph
   const instrumentalRef = useRef<HTMLAudioElement>(null);
@@ -731,6 +743,79 @@ const AudioProduction: React.FC<AudioProductionProps> = ({ lyrics, instrumentalU
   const handleInstrumentalUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) setCurrentInstrumentalUrl(URL.createObjectURL(file));
+  };
+
+  // AI Analysis Handler
+  const handleAnalyzeAudio = async () => {
+    const audioUrl = currentInstrumentalUrl || vocalAudioUrl;
+    if (!audioUrl) return;
+
+    setIsAnalyzingAudio(true);
+    try {
+      const response = await fetch(audioUrl);
+      const blob = await response.blob();
+
+      // Convert blob to base64 using Promise
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]);
+        };
+        reader.onerror = () => reject(new Error('Failed to read audio file'));
+        reader.readAsDataURL(blob);
+      });
+
+      const mimeType = blob.type || 'audio/wav';
+      const analysis = await analyzeAudioTrack(base64, mimeType);
+      setAudioAnalysis(analysis);
+    } catch (error) {
+      console.error('Audio analysis failed:', error);
+    } finally {
+      setIsAnalyzingAudio(false);
+    }
+  };
+
+  // Apply Mastering Suggestions Handler
+  const handleApplyMasteringSuggestions = (suggestions: MasteringSuggestions) => {
+    // Apply EQ settings to vocal track
+    setVocalSettings(prev => ({
+      ...prev,
+      eqLow: suggestions.eq.lowShelf.gain,
+      eqMid: suggestions.eq.highMid.gain,
+      eqHigh: suggestions.eq.highShelf.gain,
+      reverb: prev.reverb, // Keep current reverb
+      delay: prev.delay // Keep current delay
+    }));
+
+    // Apply EQ settings to harmony track
+    setHarmonySettings(prev => ({
+      ...prev,
+      eqLow: suggestions.eq.lowShelf.gain * 0.8,
+      eqMid: suggestions.eq.highMid.gain * 0.8,
+      eqHigh: suggestions.eq.highShelf.gain * 0.8,
+      reverb: prev.reverb,
+      delay: prev.delay
+    }));
+
+    // Set multiband compressor preset
+    const presetMap: Record<string, MultibandCompressorSettings> = {
+      'gentle': DEFAULT_MULTIBAND_SETTINGS,
+      'punch': { ...DEFAULT_MULTIBAND_SETTINGS, bands: DEFAULT_MULTIBAND_SETTINGS.bands.map(b => ({ ...b, threshold: b.threshold - 4, ratio: b.ratio + 1 })) },
+      'broadcast': { ...DEFAULT_MULTIBAND_SETTINGS, bands: DEFAULT_MULTIBAND_SETTINGS.bands.map(b => ({ ...b, threshold: b.threshold - 6, ratio: b.ratio + 2 })) },
+      'vocal': { ...DEFAULT_MULTIBAND_SETTINGS, bands: DEFAULT_MULTIBAND_SETTINGS.bands.map((b, i) => i === 2 ? { ...b, threshold: b.threshold - 3, makeupGain: b.makeupGain + 2 } : b) }
+    };
+
+    if (presetMap[suggestions.multibandPreset]) {
+      setMultibandSettings(presetMap[suggestions.multibandPreset]);
+      setMultibandBypass(false);
+    }
+
+    // Set LUFS target
+    if (suggestions.targetLufs === -14) setLufsPreset('spotify');
+    else if (suggestions.targetLufs === -13) setLufsPreset('youtube');
+    else if (suggestions.targetLufs === -16) setLufsPreset('apple');
+    else if (suggestions.targetLufs <= -20) setLufsPreset('broadcast');
   };
 
   // Load audio buffers for export when URLs change
@@ -1404,6 +1489,136 @@ const AudioProduction: React.FC<AudioProductionProps> = ({ lyrics, instrumentalU
                               onChange={setMultibandSettings}
                               bypass={multibandBypass}
                               onBypassChange={setMultibandBypass}
+                            />
+                          )}
+                        </div>
+                      )}
+
+                      {/* AI Tools Section */}
+                      <div className="mt-3 pt-3 border-t border-gray-700">
+                        <button
+                          onClick={() => setShowAITools(!showAITools)}
+                          className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                            showAITools
+                              ? 'bg-purple-500/20 border border-purple-500 text-purple-300'
+                              : 'bg-gray-800 border border-gray-600 text-gray-400 hover:bg-gray-700'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                          </svg>
+                          {showAITools ? 'Hide AI Tools' : 'Show AI Tools'}
+                        </button>
+                      </div>
+
+                      {/* AI Tools Panel */}
+                      {showAITools && (
+                        <div className="mt-3 p-4 bg-gray-900/50 rounded-lg border border-gray-700 space-y-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-bold text-purple-300 uppercase tracking-wider">AI Production Tools</h4>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => setShowMasteringAssistant(!showMasteringAssistant)}
+                                className={`px-2 py-1 text-xs rounded ${showMasteringAssistant ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-400'}`}
+                              >
+                                Mastering
+                              </button>
+                              <button
+                                onClick={() => setShowChordSuggestions(!showChordSuggestions)}
+                                className={`px-2 py-1 text-xs rounded ${showChordSuggestions ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-400'}`}
+                              >
+                                Chords
+                              </button>
+                              <button
+                                onClick={() => setShowStemSeparator(!showStemSeparator)}
+                                className={`px-2 py-1 text-xs rounded ${showStemSeparator ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-400'}`}
+                              >
+                                Stems
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Analyze Button */}
+                          {!audioAnalysis && (showMasteringAssistant || showChordSuggestions) && (
+                            <button
+                              onClick={handleAnalyzeAudio}
+                              disabled={isAnalyzingAudio || (!currentInstrumentalUrl && !vocalAudioUrl)}
+                              className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-all flex items-center justify-center gap-2"
+                            >
+                              {isAnalyzingAudio ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  Analyzing Audio...
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                  </svg>
+                                  Analyze Audio with AI
+                                </>
+                              )}
+                            </button>
+                          )}
+
+                          {/* Analysis Results Summary */}
+                          {audioAnalysis && (
+                            <div className="p-3 bg-gray-800/50 rounded-lg border border-purple-500/30">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-gray-400">Analysis Complete</span>
+                                <button
+                                  onClick={() => setAudioAnalysis(null)}
+                                  className="text-xs text-gray-500 hover:text-gray-300"
+                                >
+                                  Re-analyze
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-center">
+                                <div className="p-2 bg-gray-900/50 rounded">
+                                  <p className="text-xs text-gray-500">BPM</p>
+                                  <p className="text-lg font-bold text-white">{audioAnalysis.bpm}</p>
+                                </div>
+                                <div className="p-2 bg-gray-900/50 rounded">
+                                  <p className="text-xs text-gray-500">Key</p>
+                                  <p className="text-lg font-bold text-blue-400">{audioAnalysis.key}</p>
+                                </div>
+                                <div className="p-2 bg-gray-900/50 rounded">
+                                  <p className="text-xs text-gray-500">Genre</p>
+                                  <p className="text-sm font-bold text-purple-400 truncate">{audioAnalysis.genre}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* AI Mastering Assistant */}
+                          {showMasteringAssistant && (
+                            <MasteringAssistant
+                              audioAnalysis={audioAnalysis}
+                              onApplySettings={handleApplyMasteringSuggestions}
+                              isAnalyzing={isAnalyzingAudio}
+                            />
+                          )}
+
+                          {/* Chord Suggestions */}
+                          {showChordSuggestions && (
+                            <ChordSuggestions
+                              audioAnalysis={audioAnalysis}
+                              onChordSelect={(chord) => {
+                                console.log('Selected chord:', chord);
+                                // Could copy to clipboard or integrate with other features
+                                navigator.clipboard?.writeText(chord);
+                              }}
+                            />
+                          )}
+
+                          {/* Stem Separator */}
+                          {showStemSeparator && (
+                            <StemSeparator
+                              audioContext={audioContext}
+                              onStemsExtracted={(stems) => {
+                                console.log('Extracted stems:', stems);
+                                // Could integrate with mixer or export
+                              }}
                             />
                           )}
                         </div>
