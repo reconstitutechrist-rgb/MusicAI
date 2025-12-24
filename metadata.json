@@ -1,0 +1,7 @@
+{
+  "name": "MUSE AI: Music Creation & Marketing Platform",
+  "description": "A comprehensive application for artists, musicians, and songwriters to create, produce, and promote their music using AI-powered tools. Generate lyrics, vocals, music videos, and social media content all in one place.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
