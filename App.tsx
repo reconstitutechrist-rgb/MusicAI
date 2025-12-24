@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   Sidebar,
   SidebarItem,
@@ -26,6 +26,9 @@ import RemixStudio from "./components/features/RemixStudio";
 import ToastContainer from "./components/ui/ToastContainer";
 import ThemeToggle from "./components/ui/ThemeToggle";
 import { useTheme, useMusicState } from "./context/AppContext";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { LiveRegionProvider } from "./components/ui/LiveRegion";
+import { MobileNav, HamburgerButton, AppSection } from "./components/ui/MobileNav";
 
 type View =
   | "create"
@@ -38,7 +41,7 @@ type View =
   | "remix";
 
 const App: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const {
     generatedLyrics,
     setGeneratedLyrics,
@@ -51,6 +54,55 @@ const App: React.FC = () => {
   } = useMusicState();
 
   const [activeView, setActiveView] = useState<View>("create");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Handle responsive breakpoint
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Map View to AppSection for mobile nav
+  const getAppSection = (view: View): AppSection => {
+    switch (view) {
+      case 'create':
+      case 'lab':
+        return 'music';
+      case 'produce':
+      case 'remix':
+      case 'analyze':
+        return 'production';
+      case 'video':
+      case 'market':
+      case 'assist':
+        return 'marketing';
+      default:
+        return 'music';
+    }
+  };
+
+  const handleMobileSectionChange = (section: AppSection) => {
+    switch (section) {
+      case 'music':
+        setActiveView('create');
+        break;
+      case 'production':
+        setActiveView('produce');
+        break;
+      case 'marketing':
+        setActiveView('market');
+        break;
+    }
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
 
   const handleLyricsGenerated = useCallback(
     (
@@ -111,134 +163,177 @@ const App: React.FC = () => {
   };
 
   return (
-    <div
-      className={`flex min-h-screen overflow-hidden ${
-        theme === "dark"
-          ? "bg-gradient-animated text-gray-200"
-          : "bg-gradient-light text-gray-800"
-      }`}
-    >
-      {/* Toast notifications */}
-      <ToastContainer />
+    <LiveRegionProvider>
+      <ErrorBoundary>
+        <div
+          className={`flex min-h-screen overflow-hidden ${
+            theme === "dark"
+              ? "bg-gradient-animated text-gray-200"
+              : "bg-gradient-light text-gray-800"
+          }`}
+        >
+          {/* Skip navigation link for accessibility */}
+          <a
+            href="#main-content"
+            className="skip-nav sr-only-focusable"
+          >
+            Skip to main content
+          </a>
 
-      {/* Ambient background orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div
-          className={`orb w-96 h-96 -top-48 -left-48 float-note ${
-            theme === "dark" ? "orb-purple" : "orb-purple-light"
-          }`}
-        />
-        <div
-          className={`orb w-80 h-80 top-1/3 right-0 float-note-delayed ${
-            theme === "dark" ? "orb-indigo" : "orb-indigo-light"
-          }`}
-        />
-        <div
-          className={`orb w-64 h-64 bottom-0 left-1/3 float-note-slow ${
-            theme === "dark" ? "orb-pink" : "orb-pink-light"
-          }`}
-        />
-      </div>
+          {/* Toast notifications */}
+          <ToastContainer />
 
-      <Sidebar>
-        {/* Logo Section */}
-        <div className="flex items-center justify-center md:justify-start py-6 px-4 md:px-6 mb-2">
-          <div className="relative">
-            <LogoIcon className="h-10 w-10 text-indigo-400 drop-shadow-lg" />
-            <div className="absolute inset-0 h-10 w-10 bg-indigo-400/30 blur-xl rounded-full" />
-          </div>
-          <div className="ml-3 hidden md:block">
-            <span className="text-2xl font-bold gradient-text">MUSE AI</span>
-            <p
-              className={`text-[10px] -mt-1 ${
-                theme === "dark" ? "text-gray-500" : "text-gray-600"
+          {/* Mobile navigation */}
+          <MobileNav
+            isOpen={mobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)}
+            currentSection={getAppSection(activeView)}
+            onSectionChange={handleMobileSectionChange}
+            isDarkMode={theme === 'dark'}
+            onToggleTheme={toggleTheme}
+          />
+
+          {/* Mobile header with hamburger */}
+          {isMobile && (
+            <header className={`fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 backdrop-blur-sm border-b ${
+              theme === 'dark'
+                ? 'bg-gray-900/95 border-gray-700/50'
+                : 'bg-white/95 border-gray-200/50'
+            }`}>
+              <HamburgerButton onClick={() => setMobileMenuOpen(true)} />
+              <div className="flex items-center gap-2">
+                <LogoIcon className="h-6 w-6 text-indigo-400" />
+                <span className="font-bold gradient-text">MUSE AI</span>
+              </div>
+              <ThemeToggle />
+            </header>
+          )}
+
+          {/* Ambient background orbs */}
+          <div className="fixed inset-0 pointer-events-none overflow-hidden">
+            <div
+              className={`orb w-96 h-96 -top-48 -left-48 float-note ${
+                theme === "dark" ? "orb-purple" : "orb-purple-light"
               }`}
-            >
-              Create • Produce • Share
-            </p>
+            />
+            <div
+              className={`orb w-80 h-80 top-1/3 right-0 float-note-delayed ${
+                theme === "dark" ? "orb-indigo" : "orb-indigo-light"
+              }`}
+            />
+            <div
+              className={`orb w-64 h-64 bottom-0 left-1/3 float-note-slow ${
+                theme === "dark" ? "orb-pink" : "orb-pink-light"
+              }`}
+            />
           </div>
-        </div>
 
-        <SidebarSection title="Creation" />
-        <SidebarItem
-          icon={<MusicCreationIcon className="h-5 w-5" />}
-          text="Compose"
-          active={activeView === "create"}
-          onClick={() => setActiveView("create")}
-        />
-        <SidebarItem
-          icon={<LyricLabIcon className="h-5 w-5" />}
-          text="Lyric Lab"
-          active={activeView === "lab"}
-          onClick={() => setActiveView("lab")}
-        />
-        <SidebarItem
-          icon={<AudioProductionIcon className="h-5 w-5" />}
-          text="Production"
-          active={activeView === "produce"}
-          onClick={() => setActiveView("produce")}
-        />
+          {/* Desktop Sidebar - hidden on mobile */}
+          <div className={isMobile ? 'hidden' : 'block'}>
+            <Sidebar>
+              {/* Logo Section */}
+              <div className="flex items-center justify-center md:justify-start py-6 px-4 md:px-6 mb-2">
+                <div className="relative">
+                  <LogoIcon className="h-10 w-10 text-indigo-400 drop-shadow-lg" />
+                  <div className="absolute inset-0 h-10 w-10 bg-indigo-400/30 blur-xl rounded-full" />
+                </div>
+                <div className="ml-3 hidden md:block">
+                  <span className="text-2xl font-bold gradient-text">MUSE AI</span>
+                  <p
+                    className={`text-[10px] -mt-1 ${
+                      theme === "dark" ? "text-gray-500" : "text-gray-600"
+                    }`}
+                  >
+                    Create • Produce • Share
+                  </p>
+                </div>
+              </div>
 
-        <SidebarSection title="Tools" />
-        <SidebarItem
-          icon={<RemixIcon className="h-5 w-5" />}
-          text="Remix Studio"
-          active={activeView === "remix"}
-          onClick={() => setActiveView("remix")}
-        />
-        <SidebarItem
-          icon={<AnalyzerIcon className="h-5 w-5" />}
-          text="Audio Critic"
-          active={activeView === "analyze"}
-          onClick={() => setActiveView("analyze")}
-        />
+              <SidebarSection title="Creation" />
+              <SidebarItem
+                icon={<MusicCreationIcon className="h-5 w-5" />}
+                text="Compose"
+                active={activeView === "create"}
+                onClick={() => setActiveView("create")}
+              />
+              <SidebarItem
+                icon={<LyricLabIcon className="h-5 w-5" />}
+                text="Lyric Lab"
+                active={activeView === "lab"}
+                onClick={() => setActiveView("lab")}
+              />
+              <SidebarItem
+                icon={<AudioProductionIcon className="h-5 w-5" />}
+                text="Production"
+                active={activeView === "produce"}
+                onClick={() => setActiveView("produce")}
+              />
 
-        <SidebarSection title="Promotion" />
-        <SidebarItem
-          icon={<VideoCreationIcon className="h-5 w-5" />}
-          text="Video"
-          active={activeView === "video"}
-          onClick={() => setActiveView("video")}
-        />
-        <SidebarItem
-          icon={<MarketingIcon className="h-5 w-5" />}
-          text="Market"
-          active={activeView === "market"}
-          onClick={() => setActiveView("market")}
-        />
-        <SidebarItem
-          icon={<AssistantIcon className="h-5 w-5" />}
-          text="Assistant"
-          active={activeView === "assist"}
-          onClick={() => setActiveView("assist")}
-        />
+              <SidebarSection title="Tools" />
+              <SidebarItem
+                icon={<RemixIcon className="h-5 w-5" />}
+                text="Remix Studio"
+                active={activeView === "remix"}
+                onClick={() => setActiveView("remix")}
+              />
+              <SidebarItem
+                icon={<AnalyzerIcon className="h-5 w-5" />}
+                text="Audio Critic"
+                active={activeView === "analyze"}
+                onClick={() => setActiveView("analyze")}
+              />
 
-        {/* Theme Toggle at bottom */}
-        <div className="mt-auto px-4 py-4 border-t border-gray-700/50">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500 hidden md:block">Theme</span>
-            <ThemeToggle />
+              <SidebarSection title="Promotion" />
+              <SidebarItem
+                icon={<VideoCreationIcon className="h-5 w-5" />}
+                text="Video"
+                active={activeView === "video"}
+                onClick={() => setActiveView("video")}
+              />
+              <SidebarItem
+                icon={<MarketingIcon className="h-5 w-5" />}
+                text="Market"
+                active={activeView === "market"}
+                onClick={() => setActiveView("market")}
+              />
+              <SidebarItem
+                icon={<AssistantIcon className="h-5 w-5" />}
+                text="Assistant"
+                active={activeView === "assist"}
+                onClick={() => setActiveView("assist")}
+              />
+
+              {/* Theme Toggle at bottom */}
+              <div className="mt-auto px-4 py-4 border-t border-gray-700/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500 hidden md:block">Theme</span>
+                  <ThemeToggle />
+                </div>
+              </div>
+            </Sidebar>
           </div>
-        </div>
-      </Sidebar>
 
-      <main
-        className={`flex-1 ml-20 md:ml-72 relative ${
-          theme === "light" ? "bg-white/50" : ""
-        }`}
-      >
-        {/* Top ambient glow */}
-        <div
-          className={`absolute top-0 left-0 right-0 h-48 bg-gradient-to-b pointer-events-none ${
-            theme === "dark" ? "from-indigo-500/5" : "from-indigo-500/10"
-          } to-transparent`}
-        />
+          <main
+            id="main-content"
+            className={`flex-1 relative ${
+              isMobile ? 'mt-14' : 'ml-20 md:ml-72'
+            } ${theme === "light" ? "bg-white/50" : ""}`}
+            role="main"
+          >
+            {/* Top ambient glow */}
+            <div
+              className={`absolute top-0 left-0 right-0 h-48 bg-gradient-to-b pointer-events-none ${
+                theme === "dark" ? "from-indigo-500/5" : "from-indigo-500/10"
+              } to-transparent`}
+            />
 
-        <div className="p-6 md:p-10 relative z-10 animate-fade-in-up">
-          {renderView()}
+            <div className="p-4 md:p-6 lg:p-10 relative z-10 page-enter-active">
+              {renderView()}
+            </div>
+          </main>
         </div>
-      </main>
-    </div>
+      </ErrorBoundary>
+    </LiveRegionProvider>
   );
 };
 
