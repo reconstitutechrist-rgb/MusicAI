@@ -7,6 +7,10 @@ import { generateSpeech, processAudioTrack, generateInstrumentalTrack } from '..
 import WaveformPlayer from '../ui/WaveformPlayer';
 import VuMeter from '../ui/VuMeter';
 import ParametricEQ, { DEFAULT_EQ_BANDS, type EQBand } from '../ui/ParametricEQ';
+import SpectrumAnalyzer from '../ui/SpectrumAnalyzer';
+import LufsMeter, { type LufsPreset } from '../ui/LufsMeter';
+import StereoFieldVisualizer from '../ui/StereoFieldVisualizer';
+import MultibandCompressor, { DEFAULT_MULTIBAND_SETTINGS, type MultibandCompressorSettings } from '../ui/MultibandCompressor';
 import {
   bufferToWavBlob,
   downloadBlob,
@@ -270,6 +274,22 @@ const AudioProduction: React.FC<AudioProductionProps> = ({ lyrics, instrumentalU
   const [vocalAnalyser, setVocalAnalyser] = useState<AnalyserNode | null>(null);
   const [harmonyAnalyser, setHarmonyAnalyser] = useState<AnalyserNode | null>(null);
 
+  // Pro Metering State
+  const [showProMetering, setShowProMetering] = useState(false);
+  const [showSpectrumAnalyzer, setShowSpectrumAnalyzer] = useState(true);
+  const [showLufsMeter, setShowLufsMeter] = useState(true);
+  const [showStereoField, setShowStereoField] = useState(true);
+  const [showMultibandCompressor, setShowMultibandCompressor] = useState(false);
+  const [spectrumMode, setSpectrumMode] = useState<'bars' | 'line' | 'filled'>('bars');
+  const [lufsPreset, setLufsPreset] = useState<LufsPreset>('spotify');
+  const [multibandSettings, setMultibandSettings] = useState<MultibandCompressorSettings>(DEFAULT_MULTIBAND_SETTINGS);
+  const [multibandBypass, setMultibandBypass] = useState(true);
+
+  // Master Analyser State
+  const [masterAnalyser, setMasterAnalyser] = useState<AnalyserNode | null>(null);
+  const [masterAnalyserL, setMasterAnalyserL] = useState<AnalyserNode | null>(null);
+  const [masterAnalyserR, setMasterAnalyserR] = useState<AnalyserNode | null>(null);
+
   // Preset State
   const [currentPresetId, setCurrentPresetId] = useState<string | null>('flat');
   const [customPresets, setCustomPresets] = useState<FXPreset[]>(() => {
@@ -325,8 +345,14 @@ const AudioProduction: React.FC<AudioProductionProps> = ({ lyrics, instrumentalU
       delayGain?: GainNode;
       analyser?: AnalyserNode;
     };
+    master?: {
+      analyser?: AnalyserNode;
+      splitter?: ChannelSplitterNode;
+      analyserL?: AnalyserNode;
+      analyserR?: AnalyserNode;
+    };
     reverbBuffer?: AudioBuffer;
-  }>({ vocal: {}, harmony: {} });
+  }>({ vocal: {}, harmony: {}, master: {} });
 
   useEffect(() => {
     if (!audioContext) {
@@ -442,6 +468,15 @@ const AudioProduction: React.FC<AudioProductionProps> = ({ lyrics, instrumentalU
       } else {
         setHarmonyAnalyser(refs.analyser);
       }
+
+      // Connect to master analysers if they exist (for Pro Metering)
+      const master = graphRefs.current.master;
+      if (master?.analyser) {
+        refs.gain.connect(master.analyser);
+      }
+      if (master?.splitter) {
+        refs.gain.connect(master.splitter);
+      }
     }
 
     // 4. Update Parameters
@@ -453,6 +488,54 @@ const AudioProduction: React.FC<AudioProductionProps> = ({ lyrics, instrumentalU
     if (refs.delayGain) refs.delayGain.gain.value = settings.delay * 0.6;
 
   }, [audioContext]);
+
+  // Setup Master Bus Analysers for Pro Metering
+  const setupMasterAnalysers = useCallback(() => {
+    if (!audioContext) return;
+    const ctx = audioContext;
+    const master = graphRefs.current.master!;
+
+    if (!master.analyser) {
+      // Create main FFT analyser for spectrum and LUFS
+      master.analyser = ctx.createAnalyser();
+      master.analyser.fftSize = 4096;
+      master.analyser.smoothingTimeConstant = 0.8;
+      master.analyser.minDecibels = -90;
+      master.analyser.maxDecibels = -10;
+
+      // Create channel splitter for stereo analysis
+      master.splitter = ctx.createChannelSplitter(2);
+
+      // Create L/R analysers
+      master.analyserL = ctx.createAnalyser();
+      master.analyserL.fftSize = 2048;
+      master.analyserL.smoothingTimeConstant = 0.8;
+
+      master.analyserR = ctx.createAnalyser();
+      master.analyserR.fftSize = 2048;
+      master.analyserR.smoothingTimeConstant = 0.8;
+
+      // Connect splitter to L/R analysers
+      master.splitter.connect(master.analyserL, 0);
+      master.splitter.connect(master.analyserR, 1);
+
+      // Note: We need to connect audio sources to these analysers
+      // Since audio goes directly to destination, we create a parallel branch
+      // For now, connect the main analyser to destination (it will analyze the master output)
+      // In a production scenario, we'd route through a master bus
+
+      setMasterAnalyser(master.analyser);
+      setMasterAnalyserL(master.analyserL);
+      setMasterAnalyserR(master.analyserR);
+    }
+  }, [audioContext]);
+
+  // Initialize master analysers when audio context is ready
+  useEffect(() => {
+    if (audioContext && showProMetering) {
+      setupMasterAnalysers();
+    }
+  }, [audioContext, showProMetering, setupMasterAnalysers]);
 
   // Helper to convert 5-band EQ to 3-band approximation
   const getEffectiveEQSettings = useCallback((
@@ -1214,6 +1297,117 @@ const AudioProduction: React.FC<AudioProductionProps> = ({ lyrics, instrumentalU
                         </button>
                         <p className="text-xs text-gray-500 mt-1 text-center">Compare original vs. processed sound</p>
                       </div>
+
+                      {/* Pro Metering Section */}
+                      <div className="mt-3 pt-3 border-t border-gray-700">
+                        <button
+                          onClick={() => setShowProMetering(!showProMetering)}
+                          className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                            showProMetering
+                              ? 'bg-indigo-500/20 border border-indigo-500 text-indigo-300'
+                              : 'bg-gray-800 border border-gray-600 text-gray-400 hover:bg-gray-700'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                          {showProMetering ? 'Hide Pro Metering' : 'Show Pro Metering'}
+                        </button>
+                      </div>
+
+                      {/* Pro Metering Panel */}
+                      {showProMetering && (
+                        <div className="mt-3 p-4 bg-gray-900/50 rounded-lg border border-gray-700 space-y-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-bold text-indigo-300 uppercase tracking-wider">Pro Metering</h4>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => setShowSpectrumAnalyzer(!showSpectrumAnalyzer)}
+                                className={`px-2 py-1 text-xs rounded ${showSpectrumAnalyzer ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-400'}`}
+                              >
+                                Spectrum
+                              </button>
+                              <button
+                                onClick={() => setShowLufsMeter(!showLufsMeter)}
+                                className={`px-2 py-1 text-xs rounded ${showLufsMeter ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-400'}`}
+                              >
+                                LUFS
+                              </button>
+                              <button
+                                onClick={() => setShowStereoField(!showStereoField)}
+                                className={`px-2 py-1 text-xs rounded ${showStereoField ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-400'}`}
+                              >
+                                Stereo
+                              </button>
+                              <button
+                                onClick={() => setShowMultibandCompressor(!showMultibandCompressor)}
+                                className={`px-2 py-1 text-xs rounded ${showMultibandCompressor ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-400'}`}
+                              >
+                                Multiband
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Spectrum Analyzer */}
+                          {showSpectrumAnalyzer && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <select
+                                  value={spectrumMode}
+                                  onChange={(e) => setSpectrumMode(e.target.value as 'bars' | 'line' | 'filled')}
+                                  className="text-xs bg-gray-800 border border-gray-600 rounded px-2 py-1 text-gray-300"
+                                >
+                                  <option value="bars">Bars</option>
+                                  <option value="line">Line</option>
+                                  <option value="filled">Filled</option>
+                                </select>
+                              </div>
+                              <SpectrumAnalyzer
+                                analyser={vocalAnalyser || masterAnalyser}
+                                width={380}
+                                height={100}
+                                mode={spectrumMode}
+                                showPeakHold={true}
+                              />
+                            </div>
+                          )}
+
+                          {/* LUFS Meter */}
+                          {showLufsMeter && (
+                            <LufsMeter
+                              analyser={vocalAnalyser || masterAnalyser}
+                              audioContext={audioContext}
+                              width={380}
+                              height={140}
+                              targetPreset={lufsPreset}
+                              onPresetChange={setLufsPreset}
+                            />
+                          )}
+
+                          {/* Stereo Field Visualizer */}
+                          {showStereoField && (
+                            <StereoFieldVisualizer
+                              analyserL={masterAnalyserL || vocalAnalyser}
+                              analyserR={masterAnalyserR || vocalAnalyser}
+                              width={380}
+                              height={180}
+                              mode="combined"
+                              showBalance={true}
+                            />
+                          )}
+
+                          {/* Multiband Compressor */}
+                          {showMultibandCompressor && (
+                            <MultibandCompressor
+                              audioContext={audioContext}
+                              settings={multibandSettings}
+                              onChange={setMultibandSettings}
+                              bypass={multibandBypass}
+                              onBypassChange={setMultibandBypass}
+                            />
+                          )}
+                        </div>
+                      )}
 
                       {/* Export Progress Indicator */}
                       {isExporting && (

@@ -87,3 +87,74 @@ export interface FXPreset {
 }
 
 // Note: TrackConfig is defined in utils/audioExport.ts for audio export functionality
+
+// Spectrum Analyzer Types
+export interface SpectrumAnalyzerConfig {
+  fftSize: 1024 | 2048 | 4096 | 8192;
+  smoothingTimeConstant: number;
+  minDecibels: number;
+  maxDecibels: number;
+}
+
+// LUFS Metering Types
+export type LufsPreset = 'spotify' | 'youtube' | 'apple' | 'broadcast' | 'custom';
+
+export interface LufsPresetConfig {
+  name: string;
+  target: number;
+  truePeakLimit: number;
+  toleranceRange: number;
+}
+
+export interface LufsReadings {
+  momentary: number;    // 400ms window
+  shortTerm: number;    // 3s window
+  integrated: number;   // Full program
+  truePeak: number;     // dBTP
+  range?: number;       // LRA (Loudness Range)
+}
+
+// Stereo Field Types
+export interface StereoFieldReadings {
+  correlation: number;  // -1 (out of phase) to +1 (mono/in phase)
+  balance: number;      // -1 (full left) to +1 (full right)
+  width: number;        // 0 (mono) to 1+ (wide/out of phase)
+}
+
+// Multiband Compressor Types
+export interface CompressorBandSettings {
+  name: string;
+  lowFreq: number;
+  highFreq: number;
+  enabled: boolean;
+  solo: boolean;
+  threshold: number;    // -60 to 0 dB
+  ratio: number;        // 1 to 20
+  attack: number;       // 0.001 to 1 seconds
+  release: number;      // 0.01 to 2 seconds
+  makeupGain: number;   // 0 to 24 dB
+  knee?: number;        // 0 to 40 dB (soft knee)
+}
+
+export interface MultibandCompressorSettings {
+  bands: CompressorBandSettings[];
+  bypass: boolean;
+  inputGain: number;
+  outputGain: number;
+}
+
+export interface MultibandCompressorPreset {
+  id: string;
+  name: string;
+  description: string;
+  settings: MultibandCompressorSettings;
+  isBuiltIn: boolean;
+}
+
+// Master Bus Configuration
+export interface MasterBusConfig {
+  analyserFFTSize: number;
+  analyserSmoothing: number;
+  enableStereoAnalysis: boolean;
+  enableMultibandCompressor: boolean;
+}
