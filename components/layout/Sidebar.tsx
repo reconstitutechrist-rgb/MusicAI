@@ -70,8 +70,8 @@ export const SidebarItem: React.FC<SidebarItemProps> = ({
           active
             ? "bg-gradient-to-r from-indigo-600/90 to-purple-600/90 text-white shadow-lg shadow-indigo-500/25"
             : theme === "dark"
-            ? "hover:bg-white/5 text-gray-400 hover:text-white"
-            : "hover:bg-indigo-50 text-gray-600 hover:text-indigo-700"
+              ? "hover:bg-white/5 text-gray-400 hover:text-white"
+              : "hover:bg-indigo-50 text-gray-600 hover:text-indigo-700"
         }
     `}
     >

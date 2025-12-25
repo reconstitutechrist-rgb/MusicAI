@@ -1,7 +1,7 @@
-import React from 'react';
+import React from "react";
 
 interface SkeletonProps {
-  variant?: 'text' | 'rect' | 'circle' | 'card';
+  variant?: "text" | "rect" | "circle" | "card";
   width?: string | number;
   height?: string | number;
   className?: string;
@@ -9,34 +9,36 @@ interface SkeletonProps {
 }
 
 export const Skeleton: React.FC<SkeletonProps> = ({
-  variant = 'rect',
+  variant = "rect",
   width,
   height,
-  className = '',
+  className = "",
   lines = 1,
 }) => {
-  const baseClasses = 'skeleton-pulse rounded';
+  const baseClasses = "skeleton-pulse rounded";
 
   const getVariantClasses = () => {
     switch (variant) {
-      case 'text':
-        return 'h-4 rounded';
-      case 'circle':
-        return 'rounded-full';
-      case 'card':
-        return 'rounded-xl';
-      case 'rect':
+      case "text":
+        return "h-4 rounded";
+      case "circle":
+        return "rounded-full";
+      case "card":
+        return "rounded-xl";
+      case "rect":
       default:
-        return 'rounded-lg';
+        return "rounded-lg";
     }
   };
 
   const style: React.CSSProperties = {
-    width: width || (variant === 'text' ? '100%' : undefined),
-    height: height || (variant === 'text' ? '1rem' : variant === 'circle' ? width : undefined),
+    width: width || (variant === "text" ? "100%" : undefined),
+    height:
+      height ||
+      (variant === "text" ? "1rem" : variant === "circle" ? width : undefined),
   };
 
-  if (variant === 'text' && lines > 1) {
+  if (variant === "text" && lines > 1) {
     return (
       <div className={`space-y-2 ${className}`}>
         {Array.from({ length: lines }).map((_, i) => (
@@ -45,7 +47,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
             className={`${baseClasses} ${getVariantClasses()}`}
             style={{
               ...style,
-              width: i === lines - 1 ? '75%' : '100%',
+              width: i === lines - 1 ? "75%" : "100%",
             }}
           />
         ))}
@@ -62,8 +64,12 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 };
 
 // Pre-built skeleton compositions (theme-aware via CSS classes in index.css)
-export const SkeletonCard: React.FC<{ className?: string }> = ({ className = '' }) => (
-  <div className={`p-4 rounded-xl bg-gray-800/50 dark:bg-gray-800/50 light:bg-gray-200/50 ${className}`}>
+export const SkeletonCard: React.FC<{ className?: string }> = ({
+  className = "",
+}) => (
+  <div
+    className={`p-4 rounded-xl bg-gray-800/50 dark:bg-gray-800/50 light:bg-gray-200/50 ${className}`}
+  >
     <Skeleton variant="rect" height={120} className="mb-4" />
     <Skeleton variant="text" lines={2} className="mb-3" />
     <div className="flex gap-2">
@@ -75,11 +81,14 @@ export const SkeletonCard: React.FC<{ className?: string }> = ({ className = '' 
 
 export const SkeletonList: React.FC<{ count?: number; className?: string }> = ({
   count = 3,
-  className = '',
+  className = "",
 }) => (
   <div className={`space-y-3 ${className}`}>
     {Array.from({ length: count }).map((_, i) => (
-      <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-gray-800/30 dark:bg-gray-800/30">
+      <div
+        key={i}
+        className="flex items-center gap-3 p-3 rounded-lg bg-gray-800/30 dark:bg-gray-800/30"
+      >
         <Skeleton variant="circle" width={40} height={40} />
         <div className="flex-1">
           <Skeleton variant="text" width="60%" className="mb-2" />
@@ -90,10 +99,15 @@ export const SkeletonList: React.FC<{ count?: number; className?: string }> = ({
   </div>
 );
 
-export const SkeletonMixer: React.FC<{ tracks?: number }> = ({ tracks = 3 }) => (
+export const SkeletonMixer: React.FC<{ tracks?: number }> = ({
+  tracks = 3,
+}) => (
   <div className="space-y-4">
     {Array.from({ length: tracks }).map((_, i) => (
-      <div key={i} className="flex items-center gap-4 p-4 rounded-xl bg-gray-800/30 dark:bg-gray-800/30">
+      <div
+        key={i}
+        className="flex items-center gap-4 p-4 rounded-xl bg-gray-800/30 dark:bg-gray-800/30"
+      >
         <Skeleton variant="circle" width={48} height={48} />
         <div className="flex-1">
           <Skeleton variant="text" width="30%" className="mb-2" />

@@ -5,7 +5,7 @@
  * Documentation: https://elevenlabs.io/docs/api-reference/music/compose
  */
 
-const ELEVENLABS_API_BASE = 'https://api.elevenlabs.io/v1';
+const ELEVENLABS_API_BASE = "https://api.elevenlabs.io/v1";
 
 // Default timeout for API requests (5 minutes for music generation which can take time)
 const DEFAULT_TIMEOUT_MS = 300000;
@@ -16,7 +16,7 @@ const DEFAULT_TIMEOUT_MS = 300000;
 async function fetchWithTimeout(
   url: string,
   options: RequestInit,
-  timeoutMs: number = DEFAULT_TIMEOUT_MS
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
 ): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -28,8 +28,10 @@ async function fetchWithTimeout(
     });
     return response;
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error(`Request timed out after ${timeoutMs / 1000} seconds. The music generation may be taking longer than expected.`);
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(
+        `Request timed out after ${timeoutMs / 1000} seconds. The music generation may be taking longer than expected.`,
+      );
     }
     throw error;
   } finally {
@@ -38,16 +40,16 @@ async function fetchWithTimeout(
 }
 
 export interface MusicGenerationOptions {
-  prompt: string;              // Description of the music to generate (up to 4100 chars)
-  durationMs?: number;         // 3000 - 300000 ms (3 sec - 5 min)
-  instrumental?: boolean;      // If true, generates instrumental only (no vocals)
+  prompt: string; // Description of the music to generate (up to 4100 chars)
+  durationMs?: number; // 3000 - 300000 ms (3 sec - 5 min)
+  instrumental?: boolean; // If true, generates instrumental only (no vocals)
 }
 
 export interface CompositionSection {
-  name: string;                // e.g., "intro", "verse", "chorus"
-  description: string;         // Musical description for this section
-  duration_ms: number;         // Duration of this section
-  lyrics?: string;             // Optional lyrics for this section
+  name: string; // e.g., "intro", "verse", "chorus"
+  description: string; // Musical description for this section
+  duration_ms: number; // Duration of this section
+  lyrics?: string; // Optional lyrics for this section
 }
 
 export interface CompositionPlan {
@@ -71,27 +73,29 @@ export function isElevenLabsConfigured(): boolean {
  */
 export async function generateMusic(
   options: MusicGenerationOptions,
-  onProgress?: (status: string) => void
+  onProgress?: (status: string) => void,
 ): Promise<Blob> {
   const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
 
   if (!apiKey) {
-    throw new Error('ElevenLabs API key not configured. Please add VITE_ELEVENLABS_API_KEY to your environment.');
+    throw new Error(
+      "ElevenLabs API key not configured. Please add VITE_ELEVENLABS_API_KEY to your environment.",
+    );
   }
 
-  onProgress?.('Starting music generation...');
+  onProgress?.("Starting music generation...");
 
   const response = await fetchWithTimeout(`${ELEVENLABS_API_BASE}/music`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json'
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       prompt: options.prompt,
-      music_length_ms: options.durationMs || 60000,  // Default 1 minute
-      instrumental: options.instrumental ?? false
-    })
+      music_length_ms: options.durationMs || 60000, // Default 1 minute
+      instrumental: options.instrumental ?? false,
+    }),
   });
 
   if (!response.ok) {
@@ -102,8 +106,8 @@ export async function generateMusic(
         errorMessage = errorData.detail;
       }
       // Handle specific error types
-      if (errorData.error === 'bad_prompt') {
-        errorMessage = `Prompt rejected: ${errorData.message || 'Please modify your prompt to avoid copyrighted content.'}`;
+      if (errorData.error === "bad_prompt") {
+        errorMessage = `Prompt rejected: ${errorData.message || "Please modify your prompt to avoid copyrighted content."}`;
       }
     } catch {
       // If we can't parse JSON, use the status text
@@ -112,12 +116,12 @@ export async function generateMusic(
     throw new Error(errorMessage);
   }
 
-  onProgress?.('Processing audio...');
+  onProgress?.("Processing audio...");
 
   // Response is the audio file directly (MP3)
   const blob = await response.blob();
 
-  onProgress?.('Music generated successfully!');
+  onProgress?.("Music generated successfully!");
 
   return blob;
 }
@@ -128,25 +132,25 @@ export async function generateMusic(
  */
 export async function generateMusicWithPlan(
   plan: CompositionPlan,
-  onProgress?: (status: string) => void
+  onProgress?: (status: string) => void,
 ): Promise<Blob> {
   const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
 
   if (!apiKey) {
-    throw new Error('ElevenLabs API key not configured.');
+    throw new Error("ElevenLabs API key not configured.");
   }
 
-  onProgress?.('Starting composition...');
+  onProgress?.("Starting composition...");
 
   const response = await fetchWithTimeout(`${ELEVENLABS_API_BASE}/music`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'xi-api-key': apiKey,
-      'Content-Type': 'application/json'
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      composition_plan: plan
-    })
+      composition_plan: plan,
+    }),
   });
 
   if (!response.ok) {
@@ -155,7 +159,7 @@ export async function generateMusicWithPlan(
     throw new Error(detail || `Composition failed: ${response.status}`);
   }
 
-  onProgress?.('Processing audio...');
+  onProgress?.("Processing audio...");
 
   return response.blob();
 }
@@ -167,13 +171,16 @@ export async function generateMusicWithPlan(
 export async function generateInstrumental(
   stylePrompt: string,
   durationMs: number = 60000,
-  onProgress?: (status: string) => void
+  onProgress?: (status: string) => void,
 ): Promise<Blob> {
-  return generateMusic({
-    prompt: stylePrompt,
-    durationMs,
-    instrumental: true
-  }, onProgress);
+  return generateMusic(
+    {
+      prompt: stylePrompt,
+      durationMs,
+      instrumental: true,
+    },
+    onProgress,
+  );
 }
 
 /**
@@ -184,16 +191,19 @@ export async function generateSongWithLyrics(
   lyrics: string,
   style: string,
   durationMs: number = 60000,
-  onProgress?: (status: string) => void
+  onProgress?: (status: string) => void,
 ): Promise<Blob> {
   // Combine style and lyrics in the prompt
   const prompt = `${style} song with these lyrics:\n\n${lyrics}`;
 
-  return generateMusic({
-    prompt,
-    durationMs,
-    instrumental: false
-  }, onProgress);
+  return generateMusic(
+    {
+      prompt,
+      durationMs,
+      instrumental: false,
+    },
+    onProgress,
+  );
 }
 
 /**
@@ -207,7 +217,10 @@ export function createAudioUrl(blob: Blob): string {
  * Estimate cost based on duration
  * Approximate based on ElevenLabs pricing tiers
  */
-export function estimateCost(durationMs: number): { minutes: number; estimatedCost: string } {
+export function estimateCost(durationMs: number): {
+  minutes: number;
+  estimatedCost: string;
+} {
   const minutes = Math.ceil(durationMs / 60000);
   // Starter tier: ~$0.23/min, Pro tier: ~$0.33/min
   const lowEstimate = (minutes * 0.23).toFixed(2);
@@ -215,6 +228,6 @@ export function estimateCost(durationMs: number): { minutes: number; estimatedCo
 
   return {
     minutes,
-    estimatedCost: `$${lowEstimate} - $${highEstimate}`
+    estimatedCost: `$${lowEstimate} - $${highEstimate}`,
   };
 }

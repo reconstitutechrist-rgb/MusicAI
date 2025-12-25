@@ -51,7 +51,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   active = false,
 }) => {
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+    if (onClick && (e.key === "Enter" || e.key === " ")) {
       e.preventDefault();
       onClick();
     }

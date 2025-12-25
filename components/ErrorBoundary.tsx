@@ -1,27 +1,67 @@
-import React, { ErrorInfo, ReactNode } from 'react';
+import React, { ErrorInfo, ReactNode } from "react";
 
 // Inline SVG Icons
 const AlertTriangleIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+    />
   </svg>
 );
 
 const RefreshIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+    />
   </svg>
 );
 
 const HomeIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+    />
   </svg>
 );
 
 const BugIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+    />
   </svg>
 );
 
@@ -38,7 +78,10 @@ interface ErrorBoundaryState {
   errorInfo: ErrorInfo | null;
 }
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -59,9 +102,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     }
 
     // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error caught by ErrorBoundary:', error);
-      console.error('Component stack:', errorInfo.componentStack);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Error caught by ErrorBoundary:", error);
+      console.error("Component stack:", errorInfo.componentStack);
     }
   }
 
@@ -73,7 +116,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   };
 
   handleGoHome = (): void => {
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   render(): ReactNode {
@@ -127,7 +170,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
 
         {/* Error message */}
         <p className="text-gray-400 mb-6">
-          {error?.message || 'An unexpected error occurred. Please try again.'}
+          {error?.message || "An unexpected error occurred. Please try again."}
         </p>
 
         {/* Action buttons */}
@@ -149,14 +192,14 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
         </div>
 
         {/* Error details toggle (dev mode) */}
-        {process.env.NODE_ENV === 'development' && errorInfo && (
+        {process.env.NODE_ENV === "development" && errorInfo && (
           <div className="text-left">
             <button
               onClick={() => setShowDetails(!showDetails)}
               className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-400 transition-colors mx-auto"
             >
               <BugIcon className="w-4 h-4" />
-              {showDetails ? 'Hide' : 'Show'} error details
+              {showDetails ? "Hide" : "Show"} error details
             </button>
 
             {showDetails && (
@@ -186,7 +229,7 @@ interface InlineErrorProps {
 export const InlineError: React.FC<InlineErrorProps> = ({
   message,
   onRetry,
-  className = '',
+  className = "",
 }) => (
   <div
     className={`flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-lg ${className}`}
@@ -223,9 +266,11 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   description,
   action,
-  className = '',
+  className = "",
 }) => (
-  <div className={`flex flex-col items-center justify-center p-8 text-center ${className}`}>
+  <div
+    className={`flex flex-col items-center justify-center p-8 text-center ${className}`}
+  >
     {icon && (
       <div className="w-12 h-12 mb-4 rounded-full bg-gray-700/50 flex items-center justify-center text-gray-400">
         {icon}

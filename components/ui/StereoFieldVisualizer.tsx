@@ -1,18 +1,18 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from "react";
 
 interface StereoFieldVisualizerProps {
   analyserL: AnalyserNode | null;
   analyserR: AnalyserNode | null;
   width?: number;
   height?: number;
-  mode?: 'goniometer' | 'correlation' | 'combined';
+  mode?: "goniometer" | "correlation" | "combined";
   showBalance?: boolean;
 }
 
 interface StereoReadings {
-  correlation: number;  // -1 to +1
-  balance: number;      // -1 (L) to +1 (R)
-  width: number;        // 0 (mono) to 1+ (wide/out of phase)
+  correlation: number; // -1 to +1
+  balance: number; // -1 (L) to +1 (R)
+  width: number; // 0 (mono) to 1+ (wide/out of phase)
 }
 
 const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
@@ -20,8 +20,8 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
   analyserR,
   width = 200,
   height = 200,
-  mode = 'combined',
-  showBalance = true
+  mode = "combined",
+  showBalance = true,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -30,7 +30,7 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
   const [readings, setReadings] = useState<StereoReadings>({
     correlation: 1,
     balance: 0,
-    width: 0
+    width: 0,
   });
 
   const draw = useCallback(() => {
@@ -40,7 +40,7 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
       return;
     }
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
@@ -53,7 +53,7 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
     }
 
     // Clear with slight fade for phosphor effect
-    ctx.fillStyle = 'rgba(17, 24, 39, 0.3)'; // gray-900 with alpha
+    ctx.fillStyle = "rgba(17, 24, 39, 0.3)"; // gray-900 with alpha
     ctx.fillRect(0, 0, width, height);
 
     const centerX = width / 2;
@@ -61,9 +61,9 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
     const radius = Math.min(centerX, centerY) - 20;
 
     // Draw goniometer background
-    if (mode === 'goniometer' || mode === 'combined') {
+    if (mode === "goniometer" || mode === "combined") {
       // Draw circle
-      ctx.strokeStyle = '#374151';
+      ctx.strokeStyle = "#374151";
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
@@ -78,7 +78,7 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
       ctx.stroke();
 
       // Draw crosshairs (rotated 45 degrees for L/R display)
-      ctx.strokeStyle = '#4b5563';
+      ctx.strokeStyle = "#4b5563";
       ctx.lineWidth = 1;
 
       // Vertical (M - mono/sum)
@@ -97,19 +97,19 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
       const diagOffset = radius * 0.707; // cos(45°)
 
       // L marker (top-left)
-      ctx.fillStyle = '#9ca3af';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('L', centerX - diagOffset - 10, centerY - diagOffset - 5);
+      ctx.fillStyle = "#9ca3af";
+      ctx.font = "bold 12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("L", centerX - diagOffset - 10, centerY - diagOffset - 5);
 
       // R marker (top-right)
-      ctx.fillText('R', centerX + diagOffset + 10, centerY - diagOffset - 5);
+      ctx.fillText("R", centerX + diagOffset + 10, centerY - diagOffset - 5);
 
       // M marker (top)
-      ctx.fillText('M', centerX, centerY - radius - 5);
+      ctx.fillText("M", centerX, centerY - radius - 5);
 
       // S marker (right)
-      ctx.fillText('S', centerX + radius + 10, centerY + 4);
+      ctx.fillText("S", centerX + radius + 10, centerY + 4);
     }
 
     if (analyserL && analyserR) {
@@ -153,11 +153,11 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
       setReadings({
         correlation: correlation,
         balance: balance,
-        width: stereoWidth
+        width: stereoWidth,
       });
 
       // Draw Lissajous pattern (goniometer)
-      if (mode === 'goniometer' || mode === 'combined') {
+      if (mode === "goniometer" || mode === "combined") {
         // Add new points to history
         const step = Math.max(1, Math.floor(bufferLength / 512));
         for (let i = 0; i < bufferLength; i += step) {
@@ -171,7 +171,7 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
           historyRef.current.push({
             x: centerX + x,
             y: centerY + y,
-            age: 0
+            age: 0,
           });
         }
 
@@ -190,7 +190,7 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
 
           // Color based on position (stereo field)
           const distFromCenter = Math.sqrt(
-            Math.pow(point.x - centerX, 2) + Math.pow(point.y - centerY, 2)
+            Math.pow(point.x - centerX, 2) + Math.pow(point.y - centerY, 2),
           );
           const normalizedDist = Math.min(1, distFromCenter / radius);
 
@@ -213,27 +213,27 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
         }
 
         // Remove old points
-        historyRef.current = historyRef.current.filter(p => p.age < 60);
+        historyRef.current = historyRef.current.filter((p) => p.age < 60);
       }
     }
 
     // Draw correlation meter bar (at bottom for combined mode)
-    if (mode === 'correlation' || mode === 'combined') {
-      const meterY = mode === 'combined' ? height - 25 : height / 2 - 10;
+    if (mode === "correlation" || mode === "combined") {
+      const meterY = mode === "combined" ? height - 25 : height / 2 - 10;
       const meterWidth = width - 40;
       const meterX = 20;
 
       // Background
-      ctx.fillStyle = '#1f2937';
+      ctx.fillStyle = "#1f2937";
       ctx.fillRect(meterX, meterY, meterWidth, 20);
 
       // Scale markers
-      ctx.strokeStyle = '#4b5563';
+      ctx.strokeStyle = "#4b5563";
       ctx.lineWidth = 1;
       const markers = [-1, -0.5, 0, 0.5, 1];
-      ctx.font = '9px monospace';
-      ctx.fillStyle = '#6b7280';
-      ctx.textAlign = 'center';
+      ctx.font = "9px monospace";
+      ctx.fillStyle = "#6b7280";
+      ctx.textAlign = "center";
 
       for (const marker of markers) {
         const x = meterX + ((marker + 1) / 2) * meterWidth;
@@ -246,46 +246,50 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
 
       // Draw zones
       // Red zone (out of phase)
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+      ctx.fillStyle = "rgba(239, 68, 68, 0.3)";
       ctx.fillRect(meterX, meterY, meterWidth * 0.25, 20);
 
       // Yellow zone (weak correlation)
-      ctx.fillStyle = 'rgba(234, 179, 8, 0.2)';
+      ctx.fillStyle = "rgba(234, 179, 8, 0.2)";
       ctx.fillRect(meterX + meterWidth * 0.25, meterY, meterWidth * 0.25, 20);
 
       // Green zone (good correlation)
-      ctx.fillStyle = 'rgba(34, 197, 94, 0.2)';
+      ctx.fillStyle = "rgba(34, 197, 94, 0.2)";
       ctx.fillRect(meterX + meterWidth * 0.5, meterY, meterWidth * 0.5, 20);
 
       // Draw correlation indicator
       const corrX = meterX + ((readings.correlation + 1) / 2) * meterWidth;
-      const corrColor = readings.correlation < 0 ? '#ef4444' :
-        readings.correlation < 0.5 ? '#eab308' : '#22c55e';
+      const corrColor =
+        readings.correlation < 0
+          ? "#ef4444"
+          : readings.correlation < 0.5
+            ? "#eab308"
+            : "#22c55e";
 
       ctx.fillStyle = corrColor;
       ctx.fillRect(corrX - 3, meterY + 2, 6, 16);
 
       // Labels
-      ctx.fillStyle = '#9ca3af';
-      ctx.font = '10px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('Out', meterX, meterY - 3);
-      ctx.textAlign = 'right';
-      ctx.fillText('Mono', meterX + meterWidth, meterY - 3);
+      ctx.fillStyle = "#9ca3af";
+      ctx.font = "10px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("Out", meterX, meterY - 3);
+      ctx.textAlign = "right";
+      ctx.fillText("Mono", meterX + meterWidth, meterY - 3);
     }
 
     // Draw balance meter (if enabled)
-    if (showBalance && (mode === 'goniometer' || mode === 'combined')) {
-      const balY = mode === 'combined' ? height - 55 : height - 25;
+    if (showBalance && (mode === "goniometer" || mode === "combined")) {
+      const balY = mode === "combined" ? height - 55 : height - 25;
       const balWidth = width - 40;
       const balX = 20;
 
       // Background
-      ctx.fillStyle = '#1f2937';
+      ctx.fillStyle = "#1f2937";
       ctx.fillRect(balX, balY, balWidth, 12);
 
       // Center line
-      ctx.strokeStyle = '#4b5563';
+      ctx.strokeStyle = "#4b5563";
       ctx.beginPath();
       ctx.moveTo(balX + balWidth / 2, balY);
       ctx.lineTo(balX + balWidth / 2, balY + 12);
@@ -293,22 +297,22 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
 
       // Balance indicator
       const balPos = balX + ((readings.balance + 1) / 2) * balWidth;
-      ctx.fillStyle = Math.abs(readings.balance) > 0.3 ? '#eab308' : '#22c55e';
+      ctx.fillStyle = Math.abs(readings.balance) > 0.3 ? "#eab308" : "#22c55e";
       ctx.fillRect(balPos - 4, balY + 1, 8, 10);
 
       // Labels
-      ctx.fillStyle = '#6b7280';
-      ctx.font = '9px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('L', balX - 12, balY + 9);
-      ctx.textAlign = 'right';
-      ctx.fillText('R', balX + balWidth + 12, balY + 9);
-      ctx.textAlign = 'center';
-      ctx.fillText('Balance', balX + balWidth / 2, balY - 3);
+      ctx.fillStyle = "#6b7280";
+      ctx.font = "9px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("L", balX - 12, balY + 9);
+      ctx.textAlign = "right";
+      ctx.fillText("R", balX + balWidth + 12, balY + 9);
+      ctx.textAlign = "center";
+      ctx.fillText("Balance", balX + balWidth / 2, balY - 3);
     }
 
     // Draw border
-    ctx.strokeStyle = '#4b5563';
+    ctx.strokeStyle = "#4b5563";
     ctx.lineWidth = 1;
     ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
 
@@ -333,7 +337,9 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
           Stereo Field
         </span>
         <div className="flex items-center gap-3 text-xs">
-          <span className={`font-mono ${readings.correlation < 0 ? 'text-red-400' : readings.correlation < 0.5 ? 'text-yellow-400' : 'text-green-400'}`}>
+          <span
+            className={`font-mono ${readings.correlation < 0 ? "text-red-400" : readings.correlation < 0.5 ? "text-yellow-400" : "text-green-400"}`}
+          >
             Corr: {readings.correlation.toFixed(2)}
           </span>
           <span className="text-gray-400 font-mono">
@@ -345,7 +351,7 @@ const StereoFieldVisualizer: React.FC<StereoFieldVisualizerProps> = ({
         ref={canvasRef}
         style={{
           width: `${width}px`,
-          height: `${height}px`
+          height: `${height}px`,
         }}
         className="rounded-md"
       />

@@ -35,7 +35,7 @@ async function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
   sampleRate: number,
-  numChannels: number
+  numChannels: number,
 ): Promise<AudioBuffer> {
   const dataInt16 = new Int16Array(data.buffer);
   const frameCount = dataInt16.length / numChannels;
@@ -109,7 +109,7 @@ export const useUndoRedo = <T,>(initialState: T) => {
       setHistory(newHistory);
       setIndex(newHistory.length - 1);
     },
-    [history, index, state]
+    [history, index, state],
   );
 
   const undo = useCallback(() => {
@@ -140,25 +140,36 @@ export const useUndoRedo = <T,>(initialState: T) => {
 // Timeout wrapper for API calls
 const generateWithTimeout = async <T,>(
   promise: Promise<T>,
-  timeoutMs: number = 60000
+  timeoutMs: number = 60000,
 ): Promise<T> => {
   const timeout = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error('Request timed out')), timeoutMs)
+    setTimeout(() => reject(new Error("Request timed out")), timeoutMs),
   );
   return Promise.race([promise, timeout]);
 };
 
 // Error message helper
 const getErrorMessage = (error: unknown): string => {
-  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+  const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-  if (errorMessage.includes('network') || errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch')) {
+  if (
+    errorMessage.includes("network") ||
+    errorMessage.includes("fetch") ||
+    errorMessage.includes("Failed to fetch")
+  ) {
     return "Network error. Please check your connection and try again.";
-  } else if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+  } else if (
+    errorMessage.includes("timeout") ||
+    errorMessage.includes("timed out")
+  ) {
     return "The request took too long. Please try again.";
-  } else if (errorMessage.includes('API') || errorMessage.includes('401') || errorMessage.includes('403')) {
+  } else if (
+    errorMessage.includes("API") ||
+    errorMessage.includes("401") ||
+    errorMessage.includes("403")
+  ) {
     return "AI service temporarily unavailable. Please try again in a moment.";
-  } else if (errorMessage.includes('rate') || errorMessage.includes('limit')) {
+  } else if (errorMessage.includes("rate") || errorMessage.includes("limit")) {
     return "Too many requests. Please wait a moment and try again.";
   }
 
@@ -273,8 +284,8 @@ const ChevronUpIcon = (props: React.SVGProps<SVGSVGElement>) => (
 const MultiTrackPlayer: React.FC<{
   instrumentalUrl: string;
   vocalUrl: string;
-  format?: 'mp3' | 'wav';
-}> = ({ instrumentalUrl, vocalUrl, format = 'wav' }) => {
+  format?: "mp3" | "wav";
+}> = ({ instrumentalUrl, vocalUrl, format = "wav" }) => {
   const instRef = useRef<HTMLAudioElement>(null);
   const vocalRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -309,11 +320,21 @@ const MultiTrackPlayer: React.FC<{
           aria-pressed={isPlaying}
         >
           {isPlaying ? (
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <svg
+              className="w-4 h-4"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
               <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
             </svg>
           ) : (
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <svg
+              className="w-4 h-4"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
               <path d="M8 5v14l11-7z" />
             </svg>
           )}
@@ -331,7 +352,9 @@ const MultiTrackPlayer: React.FC<{
                 ? "bg-red-500/20 text-red-400 border-red-500/50"
                 : "bg-gray-700 text-gray-300 border-gray-600"
             }`}
-            aria-label={muteInst ? "Unmute instrumental track" : "Mute instrumental track"}
+            aria-label={
+              muteInst ? "Unmute instrumental track" : "Mute instrumental track"
+            }
             aria-pressed={muteInst}
           >
             {muteInst ? "Muted" : "Mute"}
@@ -407,7 +430,7 @@ interface MusicCreationProps {
     lyrics: string,
     concept: string,
     audioUrl?: string,
-    vocalUrl?: string
+    vocalUrl?: string,
   ) => void;
 }
 
@@ -429,17 +452,24 @@ const SUGGESTED_STYLES = [
 
 const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
   // State
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialMessages);
+  const [chatMessages, setChatMessages] =
+    useState<ChatMessage[]>(initialMessages);
   const [chatInput, setChatInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [latestSongData, setLatestSongData] = useState<SongData | null>(null);
-  const [latestAudioUrl, setLatestAudioUrl] = useState<string | undefined>(undefined);
-  const [latestVocalUrl, setLatestVocalUrl] = useState<string | undefined>(undefined);
+  const [latestAudioUrl, setLatestAudioUrl] = useState<string | undefined>(
+    undefined,
+  );
+  const [latestVocalUrl, setLatestVocalUrl] = useState<string | undefined>(
+    undefined,
+  );
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [generationProgress, setGenerationProgress] = useState<string>("");
   const [useElevenLabsApi] = useState<boolean>(isElevenLabsConfigured());
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false,
+  );
 
   // Refs
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -462,8 +492,9 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
       // Use 44100Hz for better quality when using ElevenLabs (44.1kHz stereo output)
       // Falls back to 24000Hz compatible with Gemini if needed
       const sampleRate = useElevenLabsApi ? 44100 : 24000;
-      const context = new (window.AudioContext ||
-        (window as any).webkitAudioContext)({ sampleRate });
+      const context = new (
+        window.AudioContext || (window as any).webkitAudioContext
+      )({ sampleRate });
       setAudioContext(context);
     }
     return () => {
@@ -480,9 +511,9 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
         setIsMobile(window.innerWidth < 768);
       }, 150);
     };
-    window.addEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
       clearTimeout(timeoutId);
     };
   }, []);
@@ -497,14 +528,14 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
       setShowScrollIndicator(isScrolledDown && chatMessages.length > 3);
     };
 
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
   }, [chatMessages.length]);
 
   // Cleanup audio URLs on unmount
   useEffect(() => {
     return () => {
-      audioUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+      audioUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     };
   }, []);
 
@@ -512,62 +543,69 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Escape to clear input
-      if (e.key === 'Escape' && chatInput && document.activeElement === inputRef.current) {
-        setChatInput('');
+      if (
+        e.key === "Escape" &&
+        chatInput &&
+        document.activeElement === inputRef.current
+      ) {
+        setChatInput("");
       }
     };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [chatInput]);
 
   // Scroll to top function
   const scrollToTop = useCallback(() => {
-    chatContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    chatContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  const handleChatSend = useCallback(async (overrideInput?: string, baseMessages?: ChatMessage[]) => {
-    const inputToSend = overrideInput || chatInput;
-    if (!inputToSend.trim() || isLoading) return;
+  const handleChatSend = useCallback(
+    async (overrideInput?: string, baseMessages?: ChatMessage[]) => {
+      const inputToSend = overrideInput || chatInput;
+      if (!inputToSend.trim() || isLoading) return;
 
-    const currentMessages = baseMessages ?? chatMessages;
-    const userMessage: ChatMessage = { role: "user", text: inputToSend };
-    const newMessages = [...currentMessages, userMessage];
-    setChatMessages(newMessages);
-    setChatInput("");
-    setIsLoading(true);
-    announce("Generating song ideas...", "polite");
+      const currentMessages = baseMessages ?? chatMessages;
+      const userMessage: ChatMessage = { role: "user", text: inputToSend };
+      const newMessages = [...currentMessages, userMessage];
+      setChatMessages(newMessages);
+      setChatInput("");
+      setIsLoading(true);
+      announce("Generating song ideas...", "polite");
 
-    try {
-      const response = await generateWithTimeout(
-        generateOrRefineSong(newMessages),
-        45000 // 45 second timeout
-      );
-      setLatestSongData(response.songData);
-      // Reset latest audio when song changes to avoid mismatch
-      setLatestAudioUrl(undefined);
-      setLatestVocalUrl(undefined);
+      try {
+        const response = await generateWithTimeout(
+          generateOrRefineSong(newMessages),
+          45000, // 45 second timeout
+        );
+        setLatestSongData(response.songData);
+        // Reset latest audio when song changes to avoid mismatch
+        setLatestAudioUrl(undefined);
+        setLatestVocalUrl(undefined);
 
-      const modelMessage: ChatMessage = {
-        role: "model",
-        text: response.conversationalResponse,
-        songData: response.songData,
-      };
-      setChatMessages([...newMessages, modelMessage]);
-      announce("Song lyrics generated successfully", "polite");
-    } catch (e) {
-      console.error(e);
-      const userFriendlyMessage = getErrorMessage(e);
-      const errorChatMessage: ChatMessage = {
-        role: "model",
-        text: userFriendlyMessage,
-        isError: true,
-      };
-      setChatMessages([...newMessages, errorChatMessage]);
-      announce("Failed to generate song", "assertive");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [chatInput, isLoading, chatMessages, announce]);
+        const modelMessage: ChatMessage = {
+          role: "model",
+          text: response.conversationalResponse,
+          songData: response.songData,
+        };
+        setChatMessages([...newMessages, modelMessage]);
+        announce("Song lyrics generated successfully", "polite");
+      } catch (e) {
+        console.error(e);
+        const userFriendlyMessage = getErrorMessage(e);
+        const errorChatMessage: ChatMessage = {
+          role: "model",
+          text: userFriendlyMessage,
+          isError: true,
+        };
+        setChatMessages([...newMessages, errorChatMessage]);
+        announce("Failed to generate song", "assertive");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [chatInput, isLoading, chatMessages, announce],
+  );
 
   const handleRegenerateText = async () => {
     if (isLoading) return;
@@ -597,7 +635,7 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
     try {
       const response = await generateWithTimeout(
         generateOrRefineSong(historyToResend),
-        45000
+        45000,
       );
       setLatestSongData(response.songData);
       setLatestAudioUrl(undefined);
@@ -626,23 +664,26 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
   };
 
   // Retry handler for error messages
-  const handleRetry = useCallback((messageIndex: number) => {
-    // Find the user message before this error
-    let userMessageIndex = -1;
-    for (let i = messageIndex - 1; i >= 0; i--) {
-      if (chatMessages[i].role === "user") {
-        userMessageIndex = i;
-        break;
+  const handleRetry = useCallback(
+    (messageIndex: number) => {
+      // Find the user message before this error
+      let userMessageIndex = -1;
+      for (let i = messageIndex - 1; i >= 0; i--) {
+        if (chatMessages[i].role === "user") {
+          userMessageIndex = i;
+          break;
+        }
       }
-    }
-    if (userMessageIndex >= 0) {
-      const userMessage = chatMessages[userMessageIndex].text;
-      // Get messages before the error (excluding the user message we're retrying)
-      const messagesBeforeRetry = chatMessages.slice(0, userMessageIndex);
-      // Pass the correct base messages to handleChatSend
-      handleChatSend(userMessage, messagesBeforeRetry);
-    }
-  }, [chatMessages, handleChatSend]);
+      if (userMessageIndex >= 0) {
+        const userMessage = chatMessages[userMessageIndex].text;
+        // Get messages before the error (excluding the user message we're retrying)
+        const messagesBeforeRetry = chatMessages.slice(0, userMessageIndex);
+        // Pass the correct base messages to handleChatSend
+        handleChatSend(userMessage, messagesBeforeRetry);
+      }
+    },
+    [chatMessages, handleChatSend],
+  );
 
   const handleGenerateFullSong = useCallback(
     async (messageIndex: number) => {
@@ -660,8 +701,8 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
                 audioError: false,
                 audioErrorMessage: undefined,
               }
-            : msg
-        )
+            : msg,
+        ),
       );
       announce("Generating audio tracks...", "polite");
 
@@ -680,9 +721,9 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
             generateInstrumental(
               `${message.songData.style} instrumental track`,
               60000, // 1 minute
-              (status) => setGenerationProgress(status)
+              (status) => setGenerationProgress(status),
             ),
-            120000 // 2 minute timeout for audio generation
+            120000, // 2 minute timeout for audio generation
           );
           instUrl = createAudioUrl(instrumentalBlob);
           audioUrlsRef.current.push(instUrl);
@@ -694,9 +735,9 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
               message.songData.lyrics,
               message.songData.style,
               60000, // 1 minute
-              (status) => setGenerationProgress(status)
+              (status) => setGenerationProgress(status),
             ),
-            120000
+            120000,
           );
           vocUrl = createAudioUrl(vocalBlob);
           audioUrlsRef.current.push(vocUrl);
@@ -706,8 +747,14 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
           // Use Gemini API (fallback - lower quality 24kHz mono)
           // Generate Instrumental and Vocals in parallel
           const [base64Instrumental, base64Vocal] = await Promise.all([
-            generateWithTimeout(generateInstrumentalTrack(message.songData.style), 90000),
-            generateWithTimeout(generateSpeech(message.songData.lyrics, "Kore"), 90000),
+            generateWithTimeout(
+              generateInstrumentalTrack(message.songData.style),
+              90000,
+            ),
+            generateWithTimeout(
+              generateSpeech(message.songData.lyrics, "Kore"),
+              90000,
+            ),
           ]);
 
           // Decode Instrumental
@@ -716,7 +763,7 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
             instBytes,
             audioContext,
             24000,
-            1
+            1,
           );
           const instBlob = bufferToWave(instBuffer);
           instUrl = URL.createObjectURL(instBlob);
@@ -728,7 +775,7 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
             vocBytes,
             audioContext,
             24000,
-            1
+            1,
           );
           const vocBlob = bufferToWave(vocBuffer);
           vocUrl = URL.createObjectURL(vocBlob);
@@ -747,16 +794,17 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
                   audioUrl: instUrl,
                   vocalUrl: vocUrl,
                 }
-              : msg
-          )
+              : msg,
+          ),
         );
         announce("Audio generation complete", "polite");
       } catch (e) {
-        console.error('Audio generation failed:', e);
+        console.error("Audio generation failed:", e);
         setGenerationProgress("");
-        const errorMsg = e instanceof Error && e.message.includes('timed out')
-          ? "Audio generation timed out. Please try again."
-          : "Audio generation failed. Click retry to try again.";
+        const errorMsg =
+          e instanceof Error && e.message.includes("timed out")
+            ? "Audio generation timed out. Please try again."
+            : "Audio generation failed. Click retry to try again.";
 
         setChatMessages((prev) =>
           prev.map((msg, idx) =>
@@ -767,13 +815,13 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
                   audioError: true,
                   audioErrorMessage: errorMsg,
                 }
-              : msg
-          )
+              : msg,
+          ),
         );
         announce("Audio generation failed", "assertive");
       }
     },
-    [chatMessages, audioContext, useElevenLabsApi, announce]
+    [chatMessages, audioContext, useElevenLabsApi, announce],
   );
 
   const handleGenerateStructure = useCallback(
@@ -783,36 +831,36 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
 
       setChatMessages((prev) =>
         prev.map((msg, idx) =>
-          idx === messageIndex ? { ...msg, isLoadingStructure: true } : msg
-        )
+          idx === messageIndex ? { ...msg, isLoadingStructure: true } : msg,
+        ),
       );
       announce("Analyzing song structure...", "polite");
 
       try {
         const sections = await generateSongStructure(
           message.songData.lyrics,
-          message.songData.style
+          message.songData.style,
         );
 
         setChatMessages((prev) =>
           prev.map((msg, idx) =>
             idx === messageIndex
               ? { ...msg, isLoadingStructure: false, structurePlan: sections }
-              : msg
-          )
+              : msg,
+          ),
         );
         announce("Structure plan generated", "polite");
       } catch (e) {
         console.error(e);
         setChatMessages((prev) =>
           prev.map((msg, idx) =>
-            idx === messageIndex ? { ...msg, isLoadingStructure: false } : msg
-          )
+            idx === messageIndex ? { ...msg, isLoadingStructure: false } : msg,
+          ),
         );
         announce("Failed to generate structure", "assertive");
       }
     },
-    [chatMessages, announce]
+    [chatMessages, announce],
   );
 
   const handleProceed = () => {
@@ -822,77 +870,88 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
         latestSongData.lyrics,
         latestSongData.style,
         latestAudioUrl,
-        latestVocalUrl
+        latestVocalUrl,
       );
     }
   };
 
   // Copy lyrics to clipboard
-  const handleCopyLyrics = useCallback(async (lyrics: string) => {
-    try {
-      await navigator.clipboard.writeText(lyrics);
-      toast.success('Lyrics copied to clipboard!');
-      announce('Lyrics copied', 'polite');
-    } catch {
-      toast.error('Failed to copy lyrics');
-    }
-  }, [toast, announce]);
+  const handleCopyLyrics = useCallback(
+    async (lyrics: string) => {
+      try {
+        await navigator.clipboard.writeText(lyrics);
+        toast.success("Lyrics copied to clipboard!");
+        announce("Lyrics copied", "polite");
+      } catch {
+        toast.error("Failed to copy lyrics");
+      }
+    },
+    [toast, announce],
+  );
 
   // Share song (uses Web Share API if available)
-  const handleShare = useCallback(async (song: SongData) => {
-    const shareText = `🎵 "${song.title}"\nStyle: ${song.style}\n\n${song.lyrics}`;
+  const handleShare = useCallback(
+    async (song: SongData) => {
+      const shareText = `🎵 "${song.title}"\nStyle: ${song.style}\n\n${song.lyrics}`;
 
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: song.title,
-          text: shareText,
-        });
-        announce('Share dialog opened', 'polite');
-      } catch (e) {
-        // User cancelled or share failed
-        if ((e as Error).name !== 'AbortError') {
-          handleCopyLyrics(song.lyrics);
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: song.title,
+            text: shareText,
+          });
+          announce("Share dialog opened", "polite");
+        } catch (e) {
+          // User cancelled or share failed
+          if ((e as Error).name !== "AbortError") {
+            handleCopyLyrics(song.lyrics);
+          }
         }
+      } else {
+        handleCopyLyrics(song.lyrics);
       }
-    } else {
-      handleCopyLyrics(song.lyrics);
-    }
-  }, [handleCopyLyrics, announce]);
+    },
+    [handleCopyLyrics, announce],
+  );
 
   // Memoized song display formatter
-  const formatSongForDisplay = useCallback((song: SongData) => {
-    return (
-      <>
-        <h3 className="font-bold text-lg mt-4">Title: "{song.title}"</h3>
-        <p className="text-sm text-gray-400 italic mt-1">Style: {song.style}</p>
-        <pre className="whitespace-pre-wrap font-sans text-sm bg-gray-900/50 p-3 rounded-md mt-3">
-          {song.lyrics}
-        </pre>
-        {/* Action buttons */}
-        <div className="flex gap-2 mt-3">
-          <Button
-            onClick={() => handleCopyLyrics(song.lyrics)}
-            variant="ghost"
-            size="sm"
-            className="text-xs"
-            aria-label="Copy lyrics to clipboard"
-          >
-            <CopyIcon className="w-3 h-3 mr-1" /> Copy
-          </Button>
-          <Button
-            onClick={() => handleShare(song)}
-            variant="ghost"
-            size="sm"
-            className="text-xs"
-            aria-label="Share song"
-          >
-            <ShareIcon className="w-3 h-3 mr-1" /> Share
-          </Button>
-        </div>
-      </>
-    );
-  }, [handleCopyLyrics, handleShare]);
+  const formatSongForDisplay = useCallback(
+    (song: SongData) => {
+      return (
+        <>
+          <h3 className="font-bold text-lg mt-4">Title: "{song.title}"</h3>
+          <p className="text-sm text-gray-400 italic mt-1">
+            Style: {song.style}
+          </p>
+          <pre className="whitespace-pre-wrap font-sans text-sm bg-gray-900/50 p-3 rounded-md mt-3">
+            {song.lyrics}
+          </pre>
+          {/* Action buttons */}
+          <div className="flex gap-2 mt-3">
+            <Button
+              onClick={() => handleCopyLyrics(song.lyrics)}
+              variant="ghost"
+              size="sm"
+              className="text-xs"
+              aria-label="Copy lyrics to clipboard"
+            >
+              <CopyIcon className="w-3 h-3 mr-1" /> Copy
+            </Button>
+            <Button
+              onClick={() => handleShare(song)}
+              variant="ghost"
+              size="sm"
+              className="text-xs"
+              aria-label="Share song"
+            >
+              <ShareIcon className="w-3 h-3 mr-1" /> Share
+            </Button>
+          </div>
+        </>
+      );
+    },
+    [handleCopyLyrics, handleShare],
+  );
 
   return (
     <Page
@@ -928,14 +987,22 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
             {chatMessages.length <= 1 && !isLoading && (
               <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center p-6">
                 <MusicNoteIcon className="w-16 h-16 text-indigo-400/50 mb-4" />
-                <h3 className="text-lg font-medium text-gray-300 mb-2">Start Creating</h3>
+                <h3 className="text-lg font-medium text-gray-300 mb-2">
+                  Start Creating
+                </h3>
                 <p className="text-gray-500 text-sm max-w-md mb-4">
                   Describe your song idea, mood, or story. Try something like:
                 </p>
                 <div className="space-y-2 text-sm text-indigo-300/80">
-                  <p className="italic">"A melancholic ballad about lost love"</p>
-                  <p className="italic">"Upbeat summer anthem with tropical vibes"</p>
-                  <p className="italic">"Dark electronic track for a night drive"</p>
+                  <p className="italic">
+                    "A melancholic ballad about lost love"
+                  </p>
+                  <p className="italic">
+                    "Upbeat summer anthem with tropical vibes"
+                  </p>
+                  <p className="italic">
+                    "Dark electronic track for a night drive"
+                  </p>
                 </div>
               </div>
             )}
@@ -944,7 +1011,7 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
               <div
                 key={i}
                 role="article"
-                aria-label={`${msg.role === 'user' ? 'You' : 'AI Assistant'}`}
+                aria-label={`${msg.role === "user" ? "You" : "AI Assistant"}`}
                 className={`flex flex-col ${
                   msg.role === "user" ? "items-end" : "items-start"
                 }`}
@@ -1024,7 +1091,9 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
                             aria-label="Generating audio"
                             className="flex flex-col items-center justify-center p-4 bg-gray-800 rounded-lg"
                           >
-                            <span className="sr-only">Generating audio tracks...</span>
+                            <span className="sr-only">
+                              Generating audio tracks...
+                            </span>
                             <div className="flex items-center">
                               <svg
                                 className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
@@ -1048,32 +1117,37 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
                                 ></path>
                               </svg>
                               <span>
-                                {generationProgress || "Generating Full Song Demo..."}
+                                {generationProgress ||
+                                  "Generating Full Song Demo..."}
                               </span>
                             </div>
                             {useElevenLabsApi && (
                               <p className="text-xs text-gray-500 mt-2">
-                                Using ElevenLabs for high-quality audio (this may take 30-60 seconds)
+                                Using ElevenLabs for high-quality audio (this
+                                may take 30-60 seconds)
                               </p>
                             )}
                           </div>
                         ) : msg.audioError ? (
                           // Audio error state with retry
                           <div className="flex flex-col items-center justify-center p-4 bg-red-900/30 border border-red-500/30 rounded-lg">
-                            <p className="text-sm text-red-300 mb-2">{msg.audioErrorMessage}</p>
+                            <p className="text-sm text-red-300 mb-2">
+                              {msg.audioErrorMessage}
+                            </p>
                             <Button
                               onClick={() => handleGenerateFullSong(i)}
                               variant="secondary"
                               size="sm"
                             >
-                              <RegenerateIcon className="w-4 h-4 mr-1" /> Retry Audio Generation
+                              <RegenerateIcon className="w-4 h-4 mr-1" /> Retry
+                              Audio Generation
                             </Button>
                           </div>
                         ) : msg.audioUrl && msg.vocalUrl ? (
                           <MultiTrackPlayer
                             instrumentalUrl={msg.audioUrl}
                             vocalUrl={msg.vocalUrl}
-                            format={useElevenLabsApi ? 'mp3' : 'wav'}
+                            format={useElevenLabsApi ? "mp3" : "wav"}
                           />
                         ) : (
                           <Button
@@ -1108,7 +1182,11 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
               </div>
             ))}
             {isLoading && (
-              <div className="flex items-start" role="status" aria-live="polite">
+              <div
+                className="flex items-start"
+                role="status"
+                aria-live="polite"
+              >
                 <div className="max-w-[85%] md:max-w-prose px-4 py-3 rounded-lg bg-gray-700">
                   <span className="sr-only">AI is generating a response</span>
                   <p className="text-sm italic text-gray-400">

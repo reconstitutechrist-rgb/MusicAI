@@ -1,47 +1,59 @@
-import React, { useState, ReactNode, useRef, useCallback, KeyboardEvent } from "react";
+import React, {
+  useState,
+  ReactNode,
+  useRef,
+  useCallback,
+  KeyboardEvent,
+} from "react";
 
 interface TabsProps {
   tabs: { name: string; content: ReactNode; icon?: ReactNode }[];
   id?: string; // Optional ID prefix for ARIA relationships
 }
 
-const Tabs: React.FC<TabsProps> = ({ tabs, id = 'tabs' }) => {
+const Tabs: React.FC<TabsProps> = ({ tabs, id = "tabs" }) => {
   const [activeTab, setActiveTab] = useState(0);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Keyboard navigation handler following WAI-ARIA Tabs Pattern
-  const handleKeyDown = useCallback((event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
-    let newIndex = currentIndex;
-    const tabCount = tabs.length;
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+      let newIndex = currentIndex;
+      const tabCount = tabs.length;
 
-    switch (event.key) {
-      case 'ArrowRight':
-        event.preventDefault();
-        newIndex = (currentIndex + 1) % tabCount;
-        break;
-      case 'ArrowLeft':
-        event.preventDefault();
-        newIndex = (currentIndex - 1 + tabCount) % tabCount;
-        break;
-      case 'Home':
-        event.preventDefault();
-        newIndex = 0;
-        break;
-      case 'End':
-        event.preventDefault();
-        newIndex = tabCount - 1;
-        break;
-      default:
-        return;
-    }
+      switch (event.key) {
+        case "ArrowRight":
+          event.preventDefault();
+          newIndex = (currentIndex + 1) % tabCount;
+          break;
+        case "ArrowLeft":
+          event.preventDefault();
+          newIndex = (currentIndex - 1 + tabCount) % tabCount;
+          break;
+        case "Home":
+          event.preventDefault();
+          newIndex = 0;
+          break;
+        case "End":
+          event.preventDefault();
+          newIndex = tabCount - 1;
+          break;
+        default:
+          return;
+      }
 
-    setActiveTab(newIndex);
-    tabRefs.current[newIndex]?.focus();
-  }, [tabs.length]);
+      setActiveTab(newIndex);
+      tabRefs.current[newIndex]?.focus();
+    },
+    [tabs.length],
+  );
 
-  const setTabRef = useCallback((el: HTMLButtonElement | null, index: number) => {
-    tabRefs.current[index] = el;
-  }, []);
+  const setTabRef = useCallback(
+    (el: HTMLButtonElement | null, index: number) => {
+      tabRefs.current[index] = el;
+    },
+    [],
+  );
 
   return (
     <div>

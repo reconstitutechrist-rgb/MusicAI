@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from "react";
 
 interface VuMeterProps {
   analyser: AnalyserNode | null;
   label?: string;
-  orientation?: 'vertical' | 'horizontal';
+  orientation?: "vertical" | "horizontal";
   width?: number;
   height?: number;
   showPeak?: boolean;
@@ -13,11 +13,11 @@ interface VuMeterProps {
 const VuMeter: React.FC<VuMeterProps> = ({
   analyser,
   label,
-  orientation = 'horizontal',
-  width = orientation === 'horizontal' ? 120 : 24,
-  height = orientation === 'horizontal' ? 24 : 80,
+  orientation = "horizontal",
+  width = orientation === "horizontal" ? 120 : 24,
+  height = orientation === "horizontal" ? 24 : 80,
   showPeak = true,
-  showDb = true
+  showDb = true,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -32,7 +32,7 @@ const VuMeter: React.FC<VuMeterProps> = ({
       return;
     }
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
@@ -40,7 +40,10 @@ const VuMeter: React.FC<VuMeterProps> = ({
     const displayHeight = height;
 
     // Set canvas size with device pixel ratio
-    if (canvas.width !== displayWidth * dpr || canvas.height !== displayHeight * dpr) {
+    if (
+      canvas.width !== displayWidth * dpr ||
+      canvas.height !== displayHeight * dpr
+    ) {
       canvas.width = displayWidth * dpr;
       canvas.height = displayHeight * dpr;
       ctx.scale(dpr, dpr);
@@ -68,8 +71,14 @@ const VuMeter: React.FC<VuMeterProps> = ({
     const peakDb = peak > 0 ? 20 * Math.log10(peak) : minDb;
 
     // Normalize to 0-1 range
-    const normalizedRms = Math.max(0, Math.min(1, (rmsDb - minDb) / (maxDb - minDb)));
-    const normalizedPeak = Math.max(0, Math.min(1, (peakDb - minDb) / (maxDb - minDb)));
+    const normalizedRms = Math.max(
+      0,
+      Math.min(1, (rmsDb - minDb) / (maxDb - minDb)),
+    );
+    const normalizedPeak = Math.max(
+      0,
+      Math.min(1, (peakDb - minDb) / (maxDb - minDb)),
+    );
 
     // Peak hold logic
     const now = Date.now();
@@ -88,21 +97,21 @@ const VuMeter: React.FC<VuMeterProps> = ({
     ctx.clearRect(0, 0, displayWidth, displayHeight);
 
     // Draw background
-    ctx.fillStyle = '#1f2937'; // gray-800
+    ctx.fillStyle = "#1f2937"; // gray-800
     ctx.fillRect(0, 0, displayWidth, displayHeight);
 
     // Create gradient for meter
-    const isHorizontal = orientation === 'horizontal';
+    const isHorizontal = orientation === "horizontal";
     const gradient = isHorizontal
       ? ctx.createLinearGradient(0, 0, displayWidth, 0)
       : ctx.createLinearGradient(0, displayHeight, 0, 0);
 
     // Green to yellow to red gradient
-    gradient.addColorStop(0, '#22c55e');    // green-500 (low level)
-    gradient.addColorStop(0.6, '#22c55e');  // green-500
-    gradient.addColorStop(0.75, '#eab308'); // yellow-500 (medium level)
-    gradient.addColorStop(0.9, '#ef4444');  // red-500 (high level)
-    gradient.addColorStop(1, '#dc2626');    // red-600 (clipping)
+    gradient.addColorStop(0, "#22c55e"); // green-500 (low level)
+    gradient.addColorStop(0.6, "#22c55e"); // green-500
+    gradient.addColorStop(0.75, "#eab308"); // yellow-500 (medium level)
+    gradient.addColorStop(0.9, "#ef4444"); // red-500 (high level)
+    gradient.addColorStop(1, "#dc2626"); // red-600 (clipping)
 
     // Draw meter fill
     ctx.fillStyle = gradient;
@@ -117,19 +126,19 @@ const VuMeter: React.FC<VuMeterProps> = ({
     // Draw peak hold indicator
     if (showPeak && peakHoldRef.current > 0.01) {
       const peakPosition = peakHoldRef.current;
-      ctx.fillStyle = peakHoldRef.current > 0.9 ? '#ef4444' : '#facc15'; // red or yellow
+      ctx.fillStyle = peakHoldRef.current > 0.9 ? "#ef4444" : "#facc15"; // red or yellow
 
       if (isHorizontal) {
         const peakX = displayWidth * peakPosition;
         ctx.fillRect(peakX - 2, 0, 3, displayHeight);
       } else {
-        const peakY = displayHeight - (displayHeight * peakPosition);
+        const peakY = displayHeight - displayHeight * peakPosition;
         ctx.fillRect(0, peakY - 1, displayWidth, 3);
       }
     }
 
     // Draw segment lines
-    ctx.strokeStyle = '#374151'; // gray-700
+    ctx.strokeStyle = "#374151"; // gray-700
     ctx.lineWidth = 1;
     const segments = 8;
     for (let i = 1; i < segments; i++) {
@@ -146,7 +155,7 @@ const VuMeter: React.FC<VuMeterProps> = ({
     }
 
     // Draw border
-    ctx.strokeStyle = '#4b5563'; // gray-600
+    ctx.strokeStyle = "#4b5563"; // gray-600
     ctx.lineWidth = 1;
     ctx.strokeRect(0.5, 0.5, displayWidth - 1, displayHeight - 1);
 
@@ -180,12 +189,14 @@ const VuMeter: React.FC<VuMeterProps> = ({
   };
 
   return (
-    <div className={`flex ${orientation === 'horizontal' ? 'flex-col' : 'flex-row-reverse'} items-center gap-1`}>
+    <div
+      className={`flex ${orientation === "horizontal" ? "flex-col" : "flex-row-reverse"} items-center gap-1`}
+    >
       <canvas
         ref={canvasRef}
         style={{
           width: `${width}px`,
-          height: `${height}px`
+          height: `${height}px`,
         }}
         className="rounded-sm"
       />
@@ -196,7 +207,7 @@ const VuMeter: React.FC<VuMeterProps> = ({
       )}
       {showDb && (
         <span className="text-xs text-gray-600 font-mono min-w-[32px] text-right">
-          {analyser ? `${Math.max(-48, Math.round(getCurrentDb()))}` : '--'}
+          {analyser ? `${Math.max(-48, Math.round(getCurrentDb()))}` : "--"}
           <span className="text-gray-700">dB</span>
         </span>
       )}

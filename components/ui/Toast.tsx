@@ -1,38 +1,95 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  ReactNode,
+} from "react";
 
 // Inline SVG Icons
 const CheckCircleIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+    />
   </svg>
 );
 
 const XCircleIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+    />
   </svg>
 );
 
 const AlertCircleIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+    />
   </svg>
 );
 
 const InfoIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+    />
   </svg>
 );
 
 const XIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  <svg
+    className={className}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M6 18L18 6M6 6l12 12"
+    />
   </svg>
 );
 
 // Toast types
-export type ToastType = 'success' | 'error' | 'warning' | 'info';
+export type ToastType = "success" | "error" | "warning" | "info";
 
 export interface ToastMessage {
   id: string;
@@ -48,7 +105,7 @@ export interface ToastMessage {
 
 interface ToastContextType {
   toasts: ToastMessage[];
-  addToast: (toast: Omit<ToastMessage, 'id'>) => string;
+  addToast: (toast: Omit<ToastMessage, "id">) => string;
   removeToast: (id: string) => void;
   clearAll: () => void;
 }
@@ -59,7 +116,7 @@ const ToastContext = createContext<ToastContextType | null>(null);
 export const useToast = () => {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
+    throw new Error("useToast must be used within a ToastProvider");
   }
   return context;
 };
@@ -70,21 +127,23 @@ export const useToastHelpers = () => {
 
   return {
     success: (title: string, message?: string) =>
-      addToast({ type: 'success', title, message }),
+      addToast({ type: "success", title, message }),
     error: (title: string, message?: string) =>
-      addToast({ type: 'error', title, message, duration: 6000 }),
+      addToast({ type: "error", title, message, duration: 6000 }),
     warning: (title: string, message?: string) =>
-      addToast({ type: 'warning', title, message }),
+      addToast({ type: "warning", title, message }),
     info: (title: string, message?: string) =>
-      addToast({ type: 'info', title, message }),
+      addToast({ type: "info", title, message }),
   };
 };
 
 // Toast Provider
-export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const ToastProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  const addToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
+  const addToast = useCallback((toast: Omit<ToastMessage, "id">) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     setToasts((prev) => [...prev, { ...toast, id }]);
     return id;
@@ -167,10 +226,10 @@ const Toast: React.FC<ToastMessage> = ({
   };
 
   const borderColors = {
-    success: 'border-green-500/30',
-    error: 'border-red-500/30',
-    warning: 'border-yellow-500/30',
-    info: 'border-blue-500/30',
+    success: "border-green-500/30",
+    error: "border-red-500/30",
+    warning: "border-yellow-500/30",
+    info: "border-blue-500/30",
   };
 
   return (
@@ -178,7 +237,7 @@ const Toast: React.FC<ToastMessage> = ({
       className={`
         pointer-events-auto max-w-sm w-full bg-gray-800/95 backdrop-blur-sm
         rounded-lg border ${borderColors[type]} shadow-lg p-4
-        ${isExiting ? 'toast-exit' : 'toast-enter'}
+        ${isExiting ? "toast-exit" : "toast-enter"}
       `}
       role="alert"
     >
@@ -186,9 +245,7 @@ const Toast: React.FC<ToastMessage> = ({
         <div className="flex-shrink-0">{icons[type]}</div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-white">{title}</p>
-          {message && (
-            <p className="text-sm text-gray-400 mt-1">{message}</p>
-          )}
+          {message && <p className="text-sm text-gray-400 mt-1">{message}</p>}
           {action && (
             <button
               onClick={action.onClick}

@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from "react";
 
 interface SpectrumAnalyzerProps {
   analyser: AnalyserNode | null;
   width?: number;
   height?: number;
-  mode?: 'bars' | 'line' | 'filled';
+  mode?: "bars" | "line" | "filled";
   showPeakHold?: boolean;
   minDb?: number;
   maxDb?: number;
@@ -15,7 +15,12 @@ interface SpectrumAnalyzerProps {
 const FREQ_MARKERS = [50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
 
 // Convert frequency to x position (logarithmic scale)
-const freqToX = (freq: number, width: number, minFreq = 20, maxFreq = 20000): number => {
+const freqToX = (
+  freq: number,
+  width: number,
+  minFreq = 20,
+  maxFreq = 20000,
+): number => {
   const minLog = Math.log10(minFreq);
   const maxLog = Math.log10(maxFreq);
   const freqLog = Math.log10(Math.max(minFreq, Math.min(maxFreq, freq)));
@@ -23,7 +28,11 @@ const freqToX = (freq: number, width: number, minFreq = 20, maxFreq = 20000): nu
 };
 
 // Convert bin index to frequency
-const binToFreq = (bin: number, sampleRate: number, fftSize: number): number => {
+const binToFreq = (
+  bin: number,
+  sampleRate: number,
+  fftSize: number,
+): number => {
   return (bin * sampleRate) / fftSize;
 };
 
@@ -31,15 +40,17 @@ const SpectrumAnalyzer: React.FC<SpectrumAnalyzerProps> = ({
   analyser,
   width = 400,
   height = 120,
-  mode = 'bars',
+  mode = "bars",
   showPeakHold = true,
   minDb = -90,
   maxDb = -10,
-  barCount = 64
+  barCount = 64,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const peakHoldRef = useRef<Float32Array>(new Float32Array(barCount).fill(minDb));
+  const peakHoldRef = useRef<Float32Array>(
+    new Float32Array(barCount).fill(minDb),
+  );
   const peakDecayRef = useRef<Float32Array>(new Float32Array(barCount).fill(0));
 
   const draw = useCallback(() => {
@@ -49,7 +60,7 @@ const SpectrumAnalyzer: React.FC<SpectrumAnalyzerProps> = ({
       return;
     }
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
@@ -62,18 +73,18 @@ const SpectrumAnalyzer: React.FC<SpectrumAnalyzerProps> = ({
     }
 
     // Clear canvas
-    ctx.fillStyle = '#111827'; // gray-900
+    ctx.fillStyle = "#111827"; // gray-900
     ctx.fillRect(0, 0, width, height);
 
     // Draw grid lines
-    ctx.strokeStyle = '#374151'; // gray-700
+    ctx.strokeStyle = "#374151"; // gray-700
     ctx.lineWidth = 0.5;
 
     // Horizontal dB grid lines
     const dbSteps = [-80, -60, -40, -20, 0];
-    ctx.font = '9px monospace';
-    ctx.fillStyle = '#6b7280'; // gray-500
-    ctx.textAlign = 'left';
+    ctx.font = "9px monospace";
+    ctx.fillStyle = "#6b7280"; // gray-500
+    ctx.textAlign = "left";
 
     for (const db of dbSteps) {
       const y = height - ((db - minDb) / (maxDb - minDb)) * height;
@@ -87,7 +98,7 @@ const SpectrumAnalyzer: React.FC<SpectrumAnalyzerProps> = ({
     }
 
     // Vertical frequency grid lines
-    ctx.textAlign = 'center';
+    ctx.textAlign = "center";
     for (const freq of FREQ_MARKERS) {
       const x = freqToX(freq, width);
       ctx.beginPath();
@@ -120,7 +131,8 @@ const SpectrumAnalyzer: React.FC<SpectrumAnalyzerProps> = ({
 
     for (let i = 0; i < barCount; i++) {
       const lowFreq = minFreq * Math.pow(maxFreq / minFreq, i / barCount);
-      const highFreq = minFreq * Math.pow(maxFreq / minFreq, (i + 1) / barCount);
+      const highFreq =
+        minFreq * Math.pow(maxFreq / minFreq, (i + 1) / barCount);
 
       // Find bins in this frequency range
       const lowBin = Math.floor((lowFreq * fftSize) / sampleRate);
@@ -129,7 +141,11 @@ const SpectrumAnalyzer: React.FC<SpectrumAnalyzerProps> = ({
       // Average the bins in this range
       let sum = 0;
       let count = 0;
-      for (let bin = Math.max(0, lowBin); bin <= Math.min(bufferLength - 1, highBin); bin++) {
+      for (
+        let bin = Math.max(0, lowBin);
+        bin <= Math.min(bufferLength - 1, highBin);
+        bin++
+      ) {
         sum += dataArray[bin];
         count++;
       }
@@ -143,13 +159,13 @@ const SpectrumAnalyzer: React.FC<SpectrumAnalyzerProps> = ({
 
     // Create gradient for bars
     const gradient = ctx.createLinearGradient(0, height, 0, 0);
-    gradient.addColorStop(0, '#22c55e');    // green-500
-    gradient.addColorStop(0.5, '#22c55e');  // green-500
-    gradient.addColorStop(0.7, '#eab308');  // yellow-500
-    gradient.addColorStop(0.85, '#f97316'); // orange-500
-    gradient.addColorStop(1, '#ef4444');    // red-500
+    gradient.addColorStop(0, "#22c55e"); // green-500
+    gradient.addColorStop(0.5, "#22c55e"); // green-500
+    gradient.addColorStop(0.7, "#eab308"); // yellow-500
+    gradient.addColorStop(0.85, "#f97316"); // orange-500
+    gradient.addColorStop(1, "#ef4444"); // red-500
 
-    if (mode === 'bars') {
+    if (mode === "bars") {
       // Draw bars
       for (let i = 0; i < barCount; i++) {
         const db = bands[i];
@@ -168,21 +184,25 @@ const SpectrumAnalyzer: React.FC<SpectrumAnalyzerProps> = ({
             peakDecayRef.current[i] = 0;
           } else {
             peakDecayRef.current[i]++;
-            if (peakDecayRef.current[i] > 30) { // Hold for ~0.5 seconds
+            if (peakDecayRef.current[i] > 30) {
+              // Hold for ~0.5 seconds
               peakHoldRef.current[i] -= 1.5; // Decay rate in dB per frame
             }
           }
 
-          const peakNormalized = Math.max(0, (peakHoldRef.current[i] - minDb) / (maxDb - minDb));
+          const peakNormalized = Math.max(
+            0,
+            (peakHoldRef.current[i] - minDb) / (maxDb - minDb),
+          );
           const peakY = height - peakNormalized * height;
 
           if (peakY < height - 2) {
-            ctx.fillStyle = peakNormalized > 0.9 ? '#ef4444' : '#facc15';
+            ctx.fillStyle = peakNormalized > 0.9 ? "#ef4444" : "#facc15";
             ctx.fillRect(x, peakY - 2, barWidth, 2);
           }
         }
       }
-    } else if (mode === 'line' || mode === 'filled') {
+    } else if (mode === "line" || mode === "filled") {
       // Draw line or filled area
       ctx.beginPath();
       ctx.moveTo(0, height);
@@ -200,7 +220,7 @@ const SpectrumAnalyzer: React.FC<SpectrumAnalyzerProps> = ({
         }
       }
 
-      if (mode === 'filled') {
+      if (mode === "filled") {
         ctx.lineTo(width, height);
         ctx.lineTo(0, height);
         ctx.closePath();
@@ -210,7 +230,7 @@ const SpectrumAnalyzer: React.FC<SpectrumAnalyzerProps> = ({
         ctx.globalAlpha = 1;
       }
 
-      ctx.strokeStyle = '#818cf8'; // indigo-400
+      ctx.strokeStyle = "#818cf8"; // indigo-400
       ctx.lineWidth = 2;
       ctx.stroke();
 
@@ -231,7 +251,10 @@ const SpectrumAnalyzer: React.FC<SpectrumAnalyzerProps> = ({
             }
           }
 
-          const peakNormalized = Math.max(0, (peakHoldRef.current[i] - minDb) / (maxDb - minDb));
+          const peakNormalized = Math.max(
+            0,
+            (peakHoldRef.current[i] - minDb) / (maxDb - minDb),
+          );
           const x = (i / (barCount - 1)) * width;
           const y = height - peakNormalized * height;
 
@@ -241,14 +264,14 @@ const SpectrumAnalyzer: React.FC<SpectrumAnalyzerProps> = ({
             ctx.lineTo(x, y);
           }
         }
-        ctx.strokeStyle = '#facc15'; // yellow-400
+        ctx.strokeStyle = "#facc15"; // yellow-400
         ctx.lineWidth = 1;
         ctx.stroke();
       }
     }
 
     // Draw border
-    ctx.strokeStyle = '#4b5563'; // gray-600
+    ctx.strokeStyle = "#4b5563"; // gray-600
     ctx.lineWidth = 1;
     ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
 
@@ -279,14 +302,14 @@ const SpectrumAnalyzer: React.FC<SpectrumAnalyzerProps> = ({
           Spectrum Analyzer
         </span>
         <span className="text-xs text-gray-500">
-          {mode === 'bars' ? 'Bar' : mode === 'line' ? 'Line' : 'Filled'} Mode
+          {mode === "bars" ? "Bar" : mode === "line" ? "Line" : "Filled"} Mode
         </span>
       </div>
       <canvas
         ref={canvasRef}
         style={{
           width: `${width}px`,
-          height: `${height}px`
+          height: `${height}px`,
         }}
         className="rounded-md"
       />

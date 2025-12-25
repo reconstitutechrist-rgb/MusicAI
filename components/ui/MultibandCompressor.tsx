@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from "react";
 
 export interface CompressorBandSettings {
   name: string;
@@ -6,11 +6,11 @@ export interface CompressorBandSettings {
   highFreq: number;
   enabled: boolean;
   solo: boolean;
-  threshold: number;    // -60 to 0 dB
-  ratio: number;        // 1 to 20
-  attack: number;       // 0.001 to 1 seconds
-  release: number;      // 0.01 to 2 seconds
-  makeupGain: number;   // 0 to 24 dB
+  threshold: number; // -60 to 0 dB
+  ratio: number; // 1 to 20
+  attack: number; // 0.001 to 1 seconds
+  release: number; // 0.01 to 2 seconds
+  makeupGain: number; // 0 to 24 dB
 }
 
 export interface MultibandCompressorSettings {
@@ -21,64 +21,284 @@ export interface MultibandCompressorSettings {
 }
 
 export const DEFAULT_BAND_SETTINGS: CompressorBandSettings[] = [
-  { name: 'Low', lowFreq: 20, highFreq: 150, enabled: true, solo: false, threshold: -20, ratio: 4, attack: 0.01, release: 0.2, makeupGain: 0 },
-  { name: 'Low-Mid', lowFreq: 150, highFreq: 600, enabled: true, solo: false, threshold: -18, ratio: 3, attack: 0.005, release: 0.15, makeupGain: 0 },
-  { name: 'High-Mid', lowFreq: 600, highFreq: 3000, enabled: true, solo: false, threshold: -16, ratio: 2.5, attack: 0.003, release: 0.1, makeupGain: 0 },
-  { name: 'High', lowFreq: 3000, highFreq: 20000, enabled: true, solo: false, threshold: -14, ratio: 2, attack: 0.001, release: 0.08, makeupGain: 0 }
+  {
+    name: "Low",
+    lowFreq: 20,
+    highFreq: 150,
+    enabled: true,
+    solo: false,
+    threshold: -20,
+    ratio: 4,
+    attack: 0.01,
+    release: 0.2,
+    makeupGain: 0,
+  },
+  {
+    name: "Low-Mid",
+    lowFreq: 150,
+    highFreq: 600,
+    enabled: true,
+    solo: false,
+    threshold: -18,
+    ratio: 3,
+    attack: 0.005,
+    release: 0.15,
+    makeupGain: 0,
+  },
+  {
+    name: "High-Mid",
+    lowFreq: 600,
+    highFreq: 3000,
+    enabled: true,
+    solo: false,
+    threshold: -16,
+    ratio: 2.5,
+    attack: 0.003,
+    release: 0.1,
+    makeupGain: 0,
+  },
+  {
+    name: "High",
+    lowFreq: 3000,
+    highFreq: 20000,
+    enabled: true,
+    solo: false,
+    threshold: -14,
+    ratio: 2,
+    attack: 0.001,
+    release: 0.08,
+    makeupGain: 0,
+  },
 ];
 
 export const DEFAULT_MULTIBAND_SETTINGS: MultibandCompressorSettings = {
   bands: DEFAULT_BAND_SETTINGS,
   bypass: true,
   inputGain: 0,
-  outputGain: 0
+  outputGain: 0,
 };
 
 export const MULTIBAND_PRESETS: Record<string, MultibandCompressorSettings> = {
-  'Gentle': {
+  Gentle: {
     bands: [
-      { name: 'Low', lowFreq: 20, highFreq: 150, enabled: true, solo: false, threshold: -24, ratio: 2, attack: 0.02, release: 0.3, makeupGain: 1 },
-      { name: 'Low-Mid', lowFreq: 150, highFreq: 600, enabled: true, solo: false, threshold: -22, ratio: 2, attack: 0.01, release: 0.2, makeupGain: 1 },
-      { name: 'High-Mid', lowFreq: 600, highFreq: 3000, enabled: true, solo: false, threshold: -20, ratio: 1.5, attack: 0.005, release: 0.15, makeupGain: 0 },
-      { name: 'High', lowFreq: 3000, highFreq: 20000, enabled: true, solo: false, threshold: -18, ratio: 1.5, attack: 0.003, release: 0.1, makeupGain: 0 }
+      {
+        name: "Low",
+        lowFreq: 20,
+        highFreq: 150,
+        enabled: true,
+        solo: false,
+        threshold: -24,
+        ratio: 2,
+        attack: 0.02,
+        release: 0.3,
+        makeupGain: 1,
+      },
+      {
+        name: "Low-Mid",
+        lowFreq: 150,
+        highFreq: 600,
+        enabled: true,
+        solo: false,
+        threshold: -22,
+        ratio: 2,
+        attack: 0.01,
+        release: 0.2,
+        makeupGain: 1,
+      },
+      {
+        name: "High-Mid",
+        lowFreq: 600,
+        highFreq: 3000,
+        enabled: true,
+        solo: false,
+        threshold: -20,
+        ratio: 1.5,
+        attack: 0.005,
+        release: 0.15,
+        makeupGain: 0,
+      },
+      {
+        name: "High",
+        lowFreq: 3000,
+        highFreq: 20000,
+        enabled: true,
+        solo: false,
+        threshold: -18,
+        ratio: 1.5,
+        attack: 0.003,
+        release: 0.1,
+        makeupGain: 0,
+      },
     ],
     bypass: false,
     inputGain: 0,
-    outputGain: 0
+    outputGain: 0,
   },
-  'Punch': {
+  Punch: {
     bands: [
-      { name: 'Low', lowFreq: 20, highFreq: 150, enabled: true, solo: false, threshold: -18, ratio: 6, attack: 0.005, release: 0.15, makeupGain: 3 },
-      { name: 'Low-Mid', lowFreq: 150, highFreq: 600, enabled: true, solo: false, threshold: -16, ratio: 4, attack: 0.003, release: 0.1, makeupGain: 2 },
-      { name: 'High-Mid', lowFreq: 600, highFreq: 3000, enabled: true, solo: false, threshold: -14, ratio: 3, attack: 0.002, release: 0.08, makeupGain: 1 },
-      { name: 'High', lowFreq: 3000, highFreq: 20000, enabled: true, solo: false, threshold: -12, ratio: 2.5, attack: 0.001, release: 0.06, makeupGain: 0 }
+      {
+        name: "Low",
+        lowFreq: 20,
+        highFreq: 150,
+        enabled: true,
+        solo: false,
+        threshold: -18,
+        ratio: 6,
+        attack: 0.005,
+        release: 0.15,
+        makeupGain: 3,
+      },
+      {
+        name: "Low-Mid",
+        lowFreq: 150,
+        highFreq: 600,
+        enabled: true,
+        solo: false,
+        threshold: -16,
+        ratio: 4,
+        attack: 0.003,
+        release: 0.1,
+        makeupGain: 2,
+      },
+      {
+        name: "High-Mid",
+        lowFreq: 600,
+        highFreq: 3000,
+        enabled: true,
+        solo: false,
+        threshold: -14,
+        ratio: 3,
+        attack: 0.002,
+        release: 0.08,
+        makeupGain: 1,
+      },
+      {
+        name: "High",
+        lowFreq: 3000,
+        highFreq: 20000,
+        enabled: true,
+        solo: false,
+        threshold: -12,
+        ratio: 2.5,
+        attack: 0.001,
+        release: 0.06,
+        makeupGain: 0,
+      },
     ],
     bypass: false,
     inputGain: 0,
-    outputGain: -2
+    outputGain: -2,
   },
-  'Broadcast': {
+  Broadcast: {
     bands: [
-      { name: 'Low', lowFreq: 20, highFreq: 150, enabled: true, solo: false, threshold: -30, ratio: 8, attack: 0.01, release: 0.25, makeupGain: 6 },
-      { name: 'Low-Mid', lowFreq: 150, highFreq: 600, enabled: true, solo: false, threshold: -28, ratio: 6, attack: 0.008, release: 0.2, makeupGain: 5 },
-      { name: 'High-Mid', lowFreq: 600, highFreq: 3000, enabled: true, solo: false, threshold: -26, ratio: 5, attack: 0.005, release: 0.15, makeupGain: 4 },
-      { name: 'High', lowFreq: 3000, highFreq: 20000, enabled: true, solo: false, threshold: -24, ratio: 4, attack: 0.003, release: 0.1, makeupGain: 3 }
+      {
+        name: "Low",
+        lowFreq: 20,
+        highFreq: 150,
+        enabled: true,
+        solo: false,
+        threshold: -30,
+        ratio: 8,
+        attack: 0.01,
+        release: 0.25,
+        makeupGain: 6,
+      },
+      {
+        name: "Low-Mid",
+        lowFreq: 150,
+        highFreq: 600,
+        enabled: true,
+        solo: false,
+        threshold: -28,
+        ratio: 6,
+        attack: 0.008,
+        release: 0.2,
+        makeupGain: 5,
+      },
+      {
+        name: "High-Mid",
+        lowFreq: 600,
+        highFreq: 3000,
+        enabled: true,
+        solo: false,
+        threshold: -26,
+        ratio: 5,
+        attack: 0.005,
+        release: 0.15,
+        makeupGain: 4,
+      },
+      {
+        name: "High",
+        lowFreq: 3000,
+        highFreq: 20000,
+        enabled: true,
+        solo: false,
+        threshold: -24,
+        ratio: 4,
+        attack: 0.003,
+        release: 0.1,
+        makeupGain: 3,
+      },
     ],
     bypass: false,
     inputGain: -3,
-    outputGain: 3
+    outputGain: 3,
   },
-  'Vocal': {
+  Vocal: {
     bands: [
-      { name: 'Low', lowFreq: 20, highFreq: 150, enabled: true, solo: false, threshold: -30, ratio: 4, attack: 0.02, release: 0.3, makeupGain: 0 },
-      { name: 'Low-Mid', lowFreq: 150, highFreq: 600, enabled: true, solo: false, threshold: -20, ratio: 3, attack: 0.01, release: 0.15, makeupGain: 2 },
-      { name: 'High-Mid', lowFreq: 600, highFreq: 3000, enabled: true, solo: false, threshold: -16, ratio: 2.5, attack: 0.005, release: 0.1, makeupGain: 3 },
-      { name: 'High', lowFreq: 3000, highFreq: 20000, enabled: true, solo: false, threshold: -18, ratio: 2, attack: 0.003, release: 0.08, makeupGain: 1 }
+      {
+        name: "Low",
+        lowFreq: 20,
+        highFreq: 150,
+        enabled: true,
+        solo: false,
+        threshold: -30,
+        ratio: 4,
+        attack: 0.02,
+        release: 0.3,
+        makeupGain: 0,
+      },
+      {
+        name: "Low-Mid",
+        lowFreq: 150,
+        highFreq: 600,
+        enabled: true,
+        solo: false,
+        threshold: -20,
+        ratio: 3,
+        attack: 0.01,
+        release: 0.15,
+        makeupGain: 2,
+      },
+      {
+        name: "High-Mid",
+        lowFreq: 600,
+        highFreq: 3000,
+        enabled: true,
+        solo: false,
+        threshold: -16,
+        ratio: 2.5,
+        attack: 0.005,
+        release: 0.1,
+        makeupGain: 3,
+      },
+      {
+        name: "High",
+        lowFreq: 3000,
+        highFreq: 20000,
+        enabled: true,
+        solo: false,
+        threshold: -18,
+        ratio: 2,
+        attack: 0.003,
+        release: 0.08,
+        makeupGain: 1,
+      },
     ],
     bypass: false,
     inputGain: 0,
-    outputGain: 0
-  }
+    outputGain: 0,
+  },
 };
 
 interface MultibandCompressorProps {
@@ -87,10 +307,10 @@ interface MultibandCompressorProps {
   onChange: (settings: MultibandCompressorSettings) => void;
   bypass: boolean;
   onBypassChange: (bypass: boolean) => void;
-  gainReductions?: number[];  // Real-time gain reduction per band (from audio nodes)
+  gainReductions?: number[]; // Real-time gain reduction per band (from audio nodes)
 }
 
-const BAND_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'];
+const BAND_COLORS = ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"];
 
 const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
   audioContext,
@@ -98,14 +318,17 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
   onChange,
   bypass,
   onBypassChange,
-  gainReductions = [0, 0, 0, 0]
+  gainReductions = [0, 0, 0, 0],
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | null>(null);
   const [selectedBand, setSelectedBand] = useState<number>(0);
-  const [selectedPreset, setSelectedPreset] = useState<string>('');
+  const [selectedPreset, setSelectedPreset] = useState<string>("");
 
-  const updateBand = (index: number, updates: Partial<CompressorBandSettings>) => {
+  const updateBand = (
+    index: number,
+    updates: Partial<CompressorBandSettings>,
+  ) => {
     const newBands = [...settings.bands];
     newBands[index] = { ...newBands[index], ...updates };
     onChange({ ...settings, bands: newBands });
@@ -127,14 +350,14 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
       return;
     }
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const width = canvas.width / (window.devicePixelRatio || 1);
     const height = canvas.height / (window.devicePixelRatio || 1);
 
     // Clear
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle = "#111827";
     ctx.fillRect(0, 0, width, height);
 
     // Draw frequency response visualization
@@ -152,11 +375,11 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
     };
 
     // Draw frequency grid
-    ctx.strokeStyle = '#374151';
+    ctx.strokeStyle = "#374151";
     ctx.lineWidth = 0.5;
-    ctx.font = '9px monospace';
-    ctx.fillStyle = '#6b7280';
-    ctx.textAlign = 'center';
+    ctx.font = "9px monospace";
+    ctx.fillStyle = "#6b7280";
+    ctx.textAlign = "center";
 
     const freqMarkers = [50, 100, 200, 500, 1000, 2000, 5000, 10000];
     for (const freq of freqMarkers) {
@@ -176,41 +399,50 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
       const x2 = freqToX(band.highFreq);
 
       // Band fill
-      ctx.fillStyle = BAND_COLORS[i] + (band.enabled ? '33' : '11');
+      ctx.fillStyle = BAND_COLORS[i] + (band.enabled ? "33" : "11");
       ctx.fillRect(x1, 0, x2 - x1, freqHeight);
 
       // Band border (highlight if selected)
-      ctx.strokeStyle = i === selectedBand ? BAND_COLORS[i] : BAND_COLORS[i] + '66';
+      ctx.strokeStyle =
+        i === selectedBand ? BAND_COLORS[i] : BAND_COLORS[i] + "66";
       ctx.lineWidth = i === selectedBand ? 2 : 1;
       ctx.strokeRect(x1, 0, x2 - x1, freqHeight);
 
       // Draw gain reduction meter inside band
       if (!bypass && band.enabled) {
         const reduction = Math.abs(gainReductions[i] || 0);
-        const reductionHeight = Math.min(freqHeight, (reduction / 20) * freqHeight);
-        ctx.fillStyle = BAND_COLORS[i] + '88';
-        ctx.fillRect(x1 + 2, freqHeight - reductionHeight, x2 - x1 - 4, reductionHeight);
+        const reductionHeight = Math.min(
+          freqHeight,
+          (reduction / 20) * freqHeight,
+        );
+        ctx.fillStyle = BAND_COLORS[i] + "88";
+        ctx.fillRect(
+          x1 + 2,
+          freqHeight - reductionHeight,
+          x2 - x1 - 4,
+          reductionHeight,
+        );
       }
 
       // Band name label
       ctx.fillStyle = BAND_COLORS[i];
-      ctx.font = 'bold 10px sans-serif';
-      ctx.textAlign = 'center';
+      ctx.font = "bold 10px sans-serif";
+      ctx.textAlign = "center";
       ctx.fillText(band.name, (x1 + x2) / 2, freqHeight / 2 + 4);
 
       // Solo/Mute indicators
       if (band.solo) {
-        ctx.fillStyle = '#facc15';
-        ctx.fillText('S', x1 + 10, 15);
+        ctx.fillStyle = "#facc15";
+        ctx.fillText("S", x1 + 10, 15);
       }
       if (!band.enabled) {
-        ctx.fillStyle = '#ef4444';
-        ctx.fillText('M', x1 + 10, 15);
+        ctx.fillStyle = "#ef4444";
+        ctx.fillText("M", x1 + 10, 15);
       }
     }
 
     // Draw border
-    ctx.strokeStyle = '#4b5563';
+    ctx.strokeStyle = "#4b5563";
     ctx.lineWidth = 1;
     ctx.strokeRect(0.5, 0.5, freqWidth - 1, freqHeight - 1);
 
@@ -223,7 +455,7 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
       const dpr = window.devicePixelRatio || 1;
       canvas.width = 400 * dpr;
       canvas.height = 80 * dpr;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       if (ctx) ctx.scale(dpr, dpr);
     }
 
@@ -252,19 +484,19 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
             className="text-xs bg-gray-700 border border-gray-600 rounded px-2 py-1 text-gray-300"
           >
             <option value="">Presets...</option>
-            {Object.keys(MULTIBAND_PRESETS).map(name => (
-              <option key={name} value={name}>{name}</option>
+            {Object.keys(MULTIBAND_PRESETS).map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
             ))}
           </select>
           <button
             onClick={() => onBypassChange(!bypass)}
             className={`text-xs px-3 py-1 rounded font-medium ${
-              bypass
-                ? 'bg-gray-600 text-gray-400'
-                : 'bg-green-600 text-white'
+              bypass ? "bg-gray-600 text-gray-400" : "bg-green-600 text-white"
             }`}
           >
-            {bypass ? 'Bypassed' : 'Active'}
+            {bypass ? "Bypassed" : "Active"}
           </button>
         </div>
       </div>
@@ -272,7 +504,7 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
       {/* Frequency visualization */}
       <canvas
         ref={canvasRef}
-        style={{ width: '400px', height: '80px' }}
+        style={{ width: "400px", height: "80px" }}
         className="rounded"
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
@@ -280,7 +512,10 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
           const clickFreq = 20 * Math.pow(1000, x / 400);
 
           for (let i = 0; i < settings.bands.length; i++) {
-            if (clickFreq >= settings.bands[i].lowFreq && clickFreq < settings.bands[i].highFreq) {
+            if (
+              clickFreq >= settings.bands[i].lowFreq &&
+              clickFreq < settings.bands[i].highFreq
+            ) {
               setSelectedBand(i);
               break;
             }
@@ -296,11 +531,11 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
             onClick={() => setSelectedBand(i)}
             className={`flex-1 py-1 text-xs font-medium rounded transition-colors ${
               i === selectedBand
-                ? 'text-white'
-                : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                ? "text-white"
+                : "bg-gray-700 text-gray-400 hover:bg-gray-600"
             }`}
             style={{
-              backgroundColor: i === selectedBand ? BAND_COLORS[i] : undefined
+              backgroundColor: i === selectedBand ? BAND_COLORS[i] : undefined,
             }}
           >
             {band.name}
@@ -313,21 +548,25 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
         {/* Enable/Solo */}
         <div className="flex gap-2">
           <button
-            onClick={() => updateBand(selectedBand, { enabled: !currentBand.enabled })}
+            onClick={() =>
+              updateBand(selectedBand, { enabled: !currentBand.enabled })
+            }
             className={`flex-1 py-1 text-xs rounded ${
               currentBand.enabled
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-700 text-red-400'
+                ? "bg-green-600 text-white"
+                : "bg-gray-700 text-red-400"
             }`}
           >
-            {currentBand.enabled ? 'Enabled' : 'Muted'}
+            {currentBand.enabled ? "Enabled" : "Muted"}
           </button>
           <button
-            onClick={() => updateBand(selectedBand, { solo: !currentBand.solo })}
+            onClick={() =>
+              updateBand(selectedBand, { solo: !currentBand.solo })
+            }
             className={`flex-1 py-1 text-xs rounded ${
               currentBand.solo
-                ? 'bg-yellow-500 text-black'
-                : 'bg-gray-700 text-gray-400'
+                ? "bg-yellow-500 text-black"
+                : "bg-gray-700 text-gray-400"
             }`}
           >
             Solo
@@ -338,7 +577,7 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
         <div className="flex items-center justify-end">
           <span className="text-xs text-gray-500 mr-2">GR:</span>
           <span className="text-sm font-mono text-orange-400">
-            {gainReductions[selectedBand]?.toFixed(1) || '0.0'} dB
+            {gainReductions[selectedBand]?.toFixed(1) || "0.0"} dB
           </span>
         </div>
 
@@ -346,7 +585,9 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
         <div className="col-span-2">
           <label className="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>Threshold</span>
-            <span className="font-mono">{currentBand.threshold.toFixed(1)} dB</span>
+            <span className="font-mono">
+              {currentBand.threshold.toFixed(1)} dB
+            </span>
           </label>
           <input
             type="range"
@@ -354,7 +595,11 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
             max="0"
             step="0.5"
             value={currentBand.threshold}
-            onChange={(e) => updateBand(selectedBand, { threshold: parseFloat(e.target.value) })}
+            onChange={(e) =>
+              updateBand(selectedBand, {
+                threshold: parseFloat(e.target.value),
+              })
+            }
             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
           />
         </div>
@@ -371,7 +616,9 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
             max="20"
             step="0.5"
             value={currentBand.ratio}
-            onChange={(e) => updateBand(selectedBand, { ratio: parseFloat(e.target.value) })}
+            onChange={(e) =>
+              updateBand(selectedBand, { ratio: parseFloat(e.target.value) })
+            }
             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
           />
         </div>
@@ -380,7 +627,9 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
         <div>
           <label className="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>Makeup</span>
-            <span className="font-mono">{currentBand.makeupGain.toFixed(1)} dB</span>
+            <span className="font-mono">
+              {currentBand.makeupGain.toFixed(1)} dB
+            </span>
           </label>
           <input
             type="range"
@@ -388,7 +637,11 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
             max="24"
             step="0.5"
             value={currentBand.makeupGain}
-            onChange={(e) => updateBand(selectedBand, { makeupGain: parseFloat(e.target.value) })}
+            onChange={(e) =>
+              updateBand(selectedBand, {
+                makeupGain: parseFloat(e.target.value),
+              })
+            }
             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
           />
         </div>
@@ -397,7 +650,9 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
         <div>
           <label className="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>Attack</span>
-            <span className="font-mono">{(currentBand.attack * 1000).toFixed(1)} ms</span>
+            <span className="font-mono">
+              {(currentBand.attack * 1000).toFixed(1)} ms
+            </span>
           </label>
           <input
             type="range"
@@ -405,7 +660,9 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
             max="0.5"
             step="0.001"
             value={currentBand.attack}
-            onChange={(e) => updateBand(selectedBand, { attack: parseFloat(e.target.value) })}
+            onChange={(e) =>
+              updateBand(selectedBand, { attack: parseFloat(e.target.value) })
+            }
             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
           />
         </div>
@@ -414,7 +671,9 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
         <div>
           <label className="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>Release</span>
-            <span className="font-mono">{(currentBand.release * 1000).toFixed(0)} ms</span>
+            <span className="font-mono">
+              {(currentBand.release * 1000).toFixed(0)} ms
+            </span>
           </label>
           <input
             type="range"
@@ -422,7 +681,9 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
             max="2"
             step="0.01"
             value={currentBand.release}
-            onChange={(e) => updateBand(selectedBand, { release: parseFloat(e.target.value) })}
+            onChange={(e) =>
+              updateBand(selectedBand, { release: parseFloat(e.target.value) })
+            }
             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
           />
         </div>
@@ -433,7 +694,9 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
         <div className="flex-1">
           <label className="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>Input Gain</span>
-            <span className="font-mono">{settings.inputGain.toFixed(1)} dB</span>
+            <span className="font-mono">
+              {settings.inputGain.toFixed(1)} dB
+            </span>
           </label>
           <input
             type="range"
@@ -441,14 +704,18 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
             max="12"
             step="0.5"
             value={settings.inputGain}
-            onChange={(e) => onChange({ ...settings, inputGain: parseFloat(e.target.value) })}
+            onChange={(e) =>
+              onChange({ ...settings, inputGain: parseFloat(e.target.value) })
+            }
             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
           />
         </div>
         <div className="flex-1">
           <label className="flex items-center justify-between text-xs text-gray-400 mb-1">
             <span>Output Gain</span>
-            <span className="font-mono">{settings.outputGain.toFixed(1)} dB</span>
+            <span className="font-mono">
+              {settings.outputGain.toFixed(1)} dB
+            </span>
           </label>
           <input
             type="range"
@@ -456,7 +723,9 @@ const MultibandCompressor: React.FC<MultibandCompressorProps> = ({
             max="12"
             step="0.5"
             value={settings.outputGain}
-            onChange={(e) => onChange({ ...settings, outputGain: parseFloat(e.target.value) })}
+            onChange={(e) =>
+              onChange({ ...settings, outputGain: parseFloat(e.target.value) })
+            }
             className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
           />
         </div>

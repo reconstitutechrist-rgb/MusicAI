@@ -28,7 +28,11 @@ import ThemeToggle from "./components/ui/ThemeToggle";
 import { useTheme, useMusicState } from "./context/AppContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LiveRegionProvider } from "./components/ui/LiveRegion";
-import { MobileNav, HamburgerButton, AppSection } from "./components/ui/MobileNav";
+import {
+  MobileNav,
+  HamburgerButton,
+  AppSection,
+} from "./components/ui/MobileNav";
 
 type View =
   | "create"
@@ -63,45 +67,45 @@ const App: React.FC = () => {
       setIsMobile(window.innerWidth < 768);
     };
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   // Map View to AppSection for mobile nav
   const getAppSection = (view: View): AppSection => {
     switch (view) {
-      case 'create':
-      case 'lab':
-        return 'music';
-      case 'produce':
-      case 'remix':
-      case 'analyze':
-        return 'production';
-      case 'video':
-      case 'market':
-      case 'assist':
-        return 'marketing';
+      case "create":
+      case "lab":
+        return "music";
+      case "produce":
+      case "remix":
+      case "analyze":
+        return "production";
+      case "video":
+      case "market":
+      case "assist":
+        return "marketing";
       default:
-        return 'music';
+        return "music";
     }
   };
 
   const handleMobileSectionChange = (section: AppSection) => {
     switch (section) {
-      case 'music':
-        setActiveView('create');
+      case "music":
+        setActiveView("create");
         break;
-      case 'production':
-        setActiveView('produce');
+      case "production":
+        setActiveView("produce");
         break;
-      case 'marketing':
-        setActiveView('market');
+      case "marketing":
+        setActiveView("market");
         break;
     }
   };
 
   const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   const handleLyricsGenerated = useCallback(
@@ -109,7 +113,7 @@ const App: React.FC = () => {
       lyrics: string,
       concept: string,
       audioUrl?: string,
-      generatedVocalUrl?: string
+      generatedVocalUrl?: string,
     ) => {
       setGeneratedLyrics(lyrics);
       setSongConcept(concept);
@@ -121,7 +125,7 @@ const App: React.FC = () => {
       }
       setActiveView("produce");
     },
-    []
+    [],
   );
 
   const renderView = () => {
@@ -173,10 +177,7 @@ const App: React.FC = () => {
           }`}
         >
           {/* Skip navigation link for accessibility */}
-          <a
-            href="#main-content"
-            className="skip-nav sr-only-focusable"
-          >
+          <a href="#main-content" className="skip-nav sr-only-focusable">
             Skip to main content
           </a>
 
@@ -189,17 +190,19 @@ const App: React.FC = () => {
             onClose={() => setMobileMenuOpen(false)}
             currentSection={getAppSection(activeView)}
             onSectionChange={handleMobileSectionChange}
-            isDarkMode={theme === 'dark'}
+            isDarkMode={theme === "dark"}
             onToggleTheme={toggleTheme}
           />
 
           {/* Mobile header with hamburger */}
           {isMobile && (
-            <header className={`fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 backdrop-blur-sm border-b ${
-              theme === 'dark'
-                ? 'bg-gray-900/95 border-gray-700/50'
-                : 'bg-white/95 border-gray-200/50'
-            }`}>
+            <header
+              className={`fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 backdrop-blur-sm border-b ${
+                theme === "dark"
+                  ? "bg-gray-900/95 border-gray-700/50"
+                  : "bg-white/95 border-gray-200/50"
+              }`}
+            >
               <HamburgerButton onClick={() => setMobileMenuOpen(true)} />
               <div className="flex items-center gap-2">
                 <LogoIcon className="h-6 w-6 text-indigo-400" />
@@ -229,7 +232,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Desktop Sidebar - hidden on mobile */}
-          <div className={isMobile ? 'hidden' : 'block'}>
+          <div className={isMobile ? "hidden" : "block"}>
             <Sidebar>
               {/* Logo Section */}
               <div className="flex items-center justify-center md:justify-start py-6 px-4 md:px-6 mb-2">
@@ -238,7 +241,9 @@ const App: React.FC = () => {
                   <div className="absolute inset-0 h-10 w-10 bg-indigo-400/30 blur-xl rounded-full" />
                 </div>
                 <div className="ml-3 hidden md:block">
-                  <span className="text-2xl font-bold gradient-text">MUSE AI</span>
+                  <span className="text-2xl font-bold gradient-text">
+                    MUSE AI
+                  </span>
                   <p
                     className={`text-[10px] -mt-1 ${
                       theme === "dark" ? "text-gray-500" : "text-gray-600"
@@ -306,7 +311,9 @@ const App: React.FC = () => {
               {/* Theme Toggle at bottom */}
               <div className="mt-auto px-4 py-4 border-t border-gray-700/50">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500 hidden md:block">Theme</span>
+                  <span className="text-xs text-gray-500 hidden md:block">
+                    Theme
+                  </span>
                   <ThemeToggle />
                 </div>
               </div>
@@ -316,7 +323,7 @@ const App: React.FC = () => {
           <main
             id="main-content"
             className={`flex-1 relative ${
-              isMobile ? 'mt-14' : 'ml-20 md:ml-72'
+              isMobile ? "mt-14" : "ml-20 md:ml-72"
             } ${theme === "light" ? "bg-white/50" : ""}`}
             role="main"
           >

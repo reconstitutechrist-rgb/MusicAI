@@ -3,7 +3,7 @@
  * Provides multiband compression, limiting, and gain reduction metering
  */
 
-import { CompressorBandSettings, MultibandCompressorSettings } from '../types';
+import { CompressorBandSettings, MultibandCompressorSettings } from "../types";
 
 /**
  * Multiband Compressor Node Structure
@@ -20,8 +20,8 @@ export interface MultibandCompressorNodes {
   // Per-band processing
   bands: {
     compressor: DynamicsCompressorNode;
-    gain: GainNode;  // Pre-compressor gain for threshold adjustment
-    makeupGain: GainNode;  // Post-compressor makeup gain
+    gain: GainNode; // Pre-compressor gain for threshold adjustment
+    makeupGain: GainNode; // Post-compressor makeup gain
   }[];
   // Bypass routing
   bypassGain: GainNode;
@@ -33,7 +33,7 @@ export interface MultibandCompressorNodes {
  */
 export function createMultibandCompressor(
   ctx: AudioContext,
-  settings: MultibandCompressorSettings
+  settings: MultibandCompressorSettings,
 ): MultibandCompressorNodes {
   // Input/Output gain stages
   const inputGain = ctx.createGain();
@@ -50,19 +50,19 @@ export function createMultibandCompressor(
   wetGain.gain.value = settings.bypass ? 0 : 1;
 
   // Crossover frequencies from band settings
-  const crossFreq1 = settings.bands[0].highFreq;  // ~150 Hz
-  const crossFreq2 = settings.bands[1].highFreq;  // ~600 Hz
-  const crossFreq3 = settings.bands[2].highFreq;  // ~3000 Hz
+  const crossFreq1 = settings.bands[0].highFreq; // ~150 Hz
+  const crossFreq2 = settings.bands[1].highFreq; // ~600 Hz
+  const crossFreq3 = settings.bands[2].highFreq; // ~3000 Hz
 
   // Create Linkwitz-Riley style crossover (2nd order for simplicity)
   const createCrossover = (freq: number) => {
     const lowpass = ctx.createBiquadFilter();
-    lowpass.type = 'lowpass';
+    lowpass.type = "lowpass";
     lowpass.frequency.value = freq;
     lowpass.Q.value = 0.707; // Butterworth
 
     const highpass = ctx.createBiquadFilter();
-    highpass.type = 'highpass';
+    highpass.type = "highpass";
     highpass.frequency.value = freq;
     highpass.Q.value = 0.707;
 
@@ -72,7 +72,7 @@ export function createMultibandCompressor(
   const crossovers = {
     lowMid: createCrossover(crossFreq1),
     midHigh: createCrossover(crossFreq2),
-    highTop: createCrossover(crossFreq3)
+    highTop: createCrossover(crossFreq3),
   };
 
   // Create per-band compressors
@@ -93,7 +93,7 @@ export function createMultibandCompressor(
     const makeupGain = ctx.createGain();
     makeupGain.gain.value = band.enabled
       ? Math.pow(10, band.makeupGain / 20)
-      : 0;  // Mute if band disabled
+      : 0; // Mute if band disabled
 
     return { compressor, gain, makeupGain };
   });
@@ -137,7 +137,7 @@ export function createMultibandCompressor(
     crossovers,
     bands,
     bypassGain,
-    wetGain
+    wetGain,
   };
 }
 
@@ -147,7 +147,7 @@ export function createMultibandCompressor(
 export function updateMultibandCompressor(
   nodes: MultibandCompressorNodes,
   settings: MultibandCompressorSettings,
-  currentTime: number
+  currentTime: number,
 ): void {
   const rampTime = 0.02; // 20ms ramp to avoid clicks
 
@@ -155,24 +155,24 @@ export function updateMultibandCompressor(
   nodes.inputGain.gain.setTargetAtTime(
     Math.pow(10, settings.inputGain / 20),
     currentTime,
-    rampTime
+    rampTime,
   );
   nodes.outputGain.gain.setTargetAtTime(
     Math.pow(10, settings.outputGain / 20),
     currentTime,
-    rampTime
+    rampTime,
   );
 
   // Update bypass
   nodes.bypassGain.gain.setTargetAtTime(
     settings.bypass ? 1 : 0,
     currentTime,
-    rampTime
+    rampTime,
   );
   nodes.wetGain.gain.setTargetAtTime(
     settings.bypass ? 0 : 1,
     currentTime,
-    rampTime
+    rampTime,
   );
 
   // Update crossover frequencies
@@ -180,26 +180,70 @@ export function updateMultibandCompressor(
   const crossFreq2 = settings.bands[1].highFreq;
   const crossFreq3 = settings.bands[2].highFreq;
 
-  nodes.crossovers.lowMid.lowpass.frequency.setTargetAtTime(crossFreq1, currentTime, rampTime);
-  nodes.crossovers.lowMid.highpass.frequency.setTargetAtTime(crossFreq1, currentTime, rampTime);
-  nodes.crossovers.midHigh.lowpass.frequency.setTargetAtTime(crossFreq2, currentTime, rampTime);
-  nodes.crossovers.midHigh.highpass.frequency.setTargetAtTime(crossFreq2, currentTime, rampTime);
-  nodes.crossovers.highTop.lowpass.frequency.setTargetAtTime(crossFreq3, currentTime, rampTime);
-  nodes.crossovers.highTop.highpass.frequency.setTargetAtTime(crossFreq3, currentTime, rampTime);
+  nodes.crossovers.lowMid.lowpass.frequency.setTargetAtTime(
+    crossFreq1,
+    currentTime,
+    rampTime,
+  );
+  nodes.crossovers.lowMid.highpass.frequency.setTargetAtTime(
+    crossFreq1,
+    currentTime,
+    rampTime,
+  );
+  nodes.crossovers.midHigh.lowpass.frequency.setTargetAtTime(
+    crossFreq2,
+    currentTime,
+    rampTime,
+  );
+  nodes.crossovers.midHigh.highpass.frequency.setTargetAtTime(
+    crossFreq2,
+    currentTime,
+    rampTime,
+  );
+  nodes.crossovers.highTop.lowpass.frequency.setTargetAtTime(
+    crossFreq3,
+    currentTime,
+    rampTime,
+  );
+  nodes.crossovers.highTop.highpass.frequency.setTargetAtTime(
+    crossFreq3,
+    currentTime,
+    rampTime,
+  );
 
   // Update per-band settings
   settings.bands.forEach((band, i) => {
     const bandNodes = nodes.bands[i];
 
     // Update compressor params
-    bandNodes.compressor.threshold.setTargetAtTime(band.threshold, currentTime, rampTime);
-    bandNodes.compressor.ratio.setTargetAtTime(band.ratio, currentTime, rampTime);
-    bandNodes.compressor.attack.setTargetAtTime(band.attack, currentTime, rampTime);
-    bandNodes.compressor.release.setTargetAtTime(band.release, currentTime, rampTime);
+    bandNodes.compressor.threshold.setTargetAtTime(
+      band.threshold,
+      currentTime,
+      rampTime,
+    );
+    bandNodes.compressor.ratio.setTargetAtTime(
+      band.ratio,
+      currentTime,
+      rampTime,
+    );
+    bandNodes.compressor.attack.setTargetAtTime(
+      band.attack,
+      currentTime,
+      rampTime,
+    );
+    bandNodes.compressor.release.setTargetAtTime(
+      band.release,
+      currentTime,
+      rampTime,
+    );
 
     // Update makeup gain (or mute if band disabled)
     const makeupValue = band.enabled ? Math.pow(10, band.makeupGain / 20) : 0;
-    bandNodes.makeupGain.gain.setTargetAtTime(makeupValue, currentTime, rampTime);
+    bandNodes.makeupGain.gain.setTargetAtTime(
+      makeupValue,
+      currentTime,
+      rampTime,
+    );
   });
 }
 
@@ -208,7 +252,7 @@ export function updateMultibandCompressor(
  * Returns array of dB values (negative = reduction)
  */
 export function getGainReductions(nodes: MultibandCompressorNodes): number[] {
-  return nodes.bands.map(band => band.compressor.reduction);
+  return nodes.bands.map((band) => band.compressor.reduction);
 }
 
 /**
@@ -228,8 +272,8 @@ export interface LimiterNodes {
  */
 export function createLimiter(
   ctx: AudioContext,
-  ceiling: number = -0.3,  // dBFS ceiling (negative value, e.g., -0.3 dB)
-  inputBoost: number = 0   // dB input gain (optional pre-gain)
+  ceiling: number = -0.3, // dBFS ceiling (negative value, e.g., -0.3 dB)
+  inputBoost: number = 0, // dB input gain (optional pre-gain)
 ): LimiterNodes {
   const inputGain = ctx.createGain();
   inputGain.gain.value = Math.pow(10, inputBoost / 20);
@@ -238,10 +282,10 @@ export function createLimiter(
   const compressor = ctx.createDynamicsCompressor();
   // Threshold at the ceiling - limiting starts exactly at ceiling
   compressor.threshold.value = ceiling;
-  compressor.ratio.value = 20;  // High ratio for limiting behavior
-  compressor.attack.value = 0.001;  // 1ms attack (fast to catch transients)
-  compressor.release.value = 0.1;  // 100ms release
-  compressor.knee.value = 0;  // Hard knee for brickwall behavior
+  compressor.ratio.value = 20; // High ratio for limiting behavior
+  compressor.attack.value = 0.001; // 1ms attack (fast to catch transients)
+  compressor.release.value = 0.1; // 100ms release
+  compressor.knee.value = 0; // Hard knee for brickwall behavior
 
   // Output gain is unity - we're limiting, not maximizing
   const outputGain = ctx.createGain();
@@ -258,17 +302,17 @@ export function createLimiter(
  */
 export function calculateDelayTime(
   bpm: number,
-  noteValue: '1/4' | '1/8' | '1/8d' | '1/16' | '1/4t' | '1/8t'
+  noteValue: "1/4" | "1/8" | "1/8d" | "1/16" | "1/4t" | "1/8t",
 ): number {
-  const beatDuration = 60 / bpm;  // Duration of one quarter note in seconds
+  const beatDuration = 60 / bpm; // Duration of one quarter note in seconds
 
   const multipliers: Record<string, number> = {
-    '1/4': 1,
-    '1/8': 0.5,
-    '1/8d': 0.75,  // Dotted eighth
-    '1/16': 0.25,
-    '1/4t': 2/3,   // Quarter note triplet
-    '1/8t': 1/3    // Eighth note triplet
+    "1/4": 1,
+    "1/8": 0.5,
+    "1/8d": 0.75, // Dotted eighth
+    "1/16": 0.25,
+    "1/4t": 2 / 3, // Quarter note triplet
+    "1/8t": 1 / 3, // Eighth note triplet
   };
 
   return beatDuration * multipliers[noteValue];
@@ -292,20 +336,20 @@ export function gainToDb(gain: number): number {
  * Sidechain Compressor Settings
  */
 export interface SidechainSettings {
-  threshold: number;    // -60 to 0 dB
-  ratio: number;        // 1 to 20
-  attack: number;       // 0.001 to 1 seconds
-  release: number;      // 0.01 to 2 seconds
-  makeupGain: number;   // 0 to 24 dB
+  threshold: number; // -60 to 0 dB
+  ratio: number; // 1 to 20
+  attack: number; // 0.001 to 1 seconds
+  release: number; // 0.01 to 2 seconds
+  makeupGain: number; // 0 to 24 dB
 }
 
 /**
  * Sidechain Compressor Node Structure
  */
 export interface SidechainCompressorNodes {
-  analyser: AnalyserNode;        // Monitors sidechain source level
-  gainNode: GainNode;            // Applies gain reduction to target
-  makeupGain: GainNode;          // Makeup gain after compression
+  analyser: AnalyserNode; // Monitors sidechain source level
+  gainNode: GainNode; // Applies gain reduction to target
+  makeupGain: GainNode; // Makeup gain after compression
 }
 
 export const DEFAULT_SIDECHAIN_SETTINGS: SidechainSettings = {
@@ -313,7 +357,7 @@ export const DEFAULT_SIDECHAIN_SETTINGS: SidechainSettings = {
   ratio: 4,
   attack: 0.003,
   release: 0.25,
-  makeupGain: 0
+  makeupGain: 0,
 };
 
 /**
@@ -323,7 +367,7 @@ export const DEFAULT_SIDECHAIN_SETTINGS: SidechainSettings = {
  */
 export function createSidechainCompressor(
   ctx: AudioContext,
-  settings: SidechainSettings = DEFAULT_SIDECHAIN_SETTINGS
+  settings: SidechainSettings = DEFAULT_SIDECHAIN_SETTINGS,
 ): SidechainCompressorNodes {
   // Analyser for detecting sidechain source level
   const analyser = ctx.createAnalyser();
@@ -347,7 +391,7 @@ export function createSidechainCompressor(
  */
 export function calculateSidechainGainReduction(
   analyser: AnalyserNode,
-  settings: SidechainSettings
+  settings: SidechainSettings,
 ): { gainMultiplier: number; reductionDb: number } {
   // Get time domain data for RMS calculation
   const bufferLength = analyser.frequencyBinCount;

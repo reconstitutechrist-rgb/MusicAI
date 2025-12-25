@@ -1,4 +1,3 @@
-
 export interface LyricsAndConcept {
   lyrics: string;
   concept: string;
@@ -38,7 +37,7 @@ export interface StructureSection {
 }
 
 export interface ChatMessage {
-  role: 'user' | 'model';
+  role: "user" | "model";
   text: string;
   translatedText?: string;
   // Properties for Music Creation conversational UI
@@ -65,18 +64,18 @@ export interface AudioAnalysisResult {
 
 // Audio Production Types
 export interface TrackFX {
-  eqLow: number;   // -10 to 10 dB
-  eqMid: number;   // -10 to 10 dB
-  eqHigh: number;  // -10 to 10 dB
-  reverb: number;  // 0 to 1
-  delay: number;   // 0 to 1
+  eqLow: number; // -10 to 10 dB
+  eqMid: number; // -10 to 10 dB
+  eqHigh: number; // -10 to 10 dB
+  reverb: number; // 0 to 1
+  delay: number; // 0 to 1
 }
 
 export interface EQBand {
   id: string;
-  frequency: number;  // 20-20000 Hz
-  gain: number;       // -12 to +12 dB
-  q: number;          // 0.1 to 10
+  frequency: number; // 20-20000 Hz
+  gain: number; // -12 to +12 dB
+  q: number; // 0.1 to 10
   type: BiquadFilterType;
   enabled: boolean;
 }
@@ -101,7 +100,12 @@ export interface SpectrumAnalyzerConfig {
 }
 
 // LUFS Metering Types
-export type LufsPreset = 'spotify' | 'youtube' | 'apple' | 'broadcast' | 'custom';
+export type LufsPreset =
+  | "spotify"
+  | "youtube"
+  | "apple"
+  | "broadcast"
+  | "custom";
 
 export interface LufsPresetConfig {
   name: string;
@@ -111,18 +115,18 @@ export interface LufsPresetConfig {
 }
 
 export interface LufsReadings {
-  momentary: number;    // 400ms window
-  shortTerm: number;    // 3s window
-  integrated: number;   // Full program
-  truePeak: number;     // dBTP
-  range?: number;       // LRA (Loudness Range)
+  momentary: number; // 400ms window
+  shortTerm: number; // 3s window
+  integrated: number; // Full program
+  truePeak: number; // dBTP
+  range?: number; // LRA (Loudness Range)
 }
 
 // Stereo Field Types
 export interface StereoFieldReadings {
-  correlation: number;  // -1 (out of phase) to +1 (mono/in phase)
-  balance: number;      // -1 (full left) to +1 (full right)
-  width: number;        // 0 (mono) to 1+ (wide/out of phase)
+  correlation: number; // -1 (out of phase) to +1 (mono/in phase)
+  balance: number; // -1 (full left) to +1 (full right)
+  width: number; // 0 (mono) to 1+ (wide/out of phase)
 }
 
 // Multiband Compressor Types
@@ -132,12 +136,12 @@ export interface CompressorBandSettings {
   highFreq: number;
   enabled: boolean;
   solo: boolean;
-  threshold: number;    // -60 to 0 dB
-  ratio: number;        // 1 to 20
-  attack: number;       // 0.001 to 1 seconds
-  release: number;      // 0.01 to 2 seconds
-  makeupGain: number;   // 0 to 24 dB
-  knee?: number;        // 0 to 40 dB (soft knee)
+  threshold: number; // -60 to 0 dB
+  ratio: number; // 1 to 20
+  attack: number; // 0.001 to 1 seconds
+  release: number; // 0.01 to 2 seconds
+  makeupGain: number; // 0 to 24 dB
+  knee?: number; // 0 to 40 dB (soft knee)
 }
 
 export interface MultibandCompressorSettings {
@@ -164,30 +168,38 @@ export interface MasterBusConfig {
 }
 
 // Automation Types
-export type AutomationCurveType = 'linear' | 'exponential' | 'hold' | 'smooth';
+export type AutomationCurveType = "linear" | "exponential" | "hold" | "smooth";
 
 export interface AutomationPoint {
   id: string;
-  time: number;       // Position in seconds
-  value: number;      // Normalized 0-1 value
-  curve: AutomationCurveType;  // Interpolation to next point
+  time: number; // Position in seconds
+  value: number; // Normalized 0-1 value
+  curve: AutomationCurveType; // Interpolation to next point
 }
 
 export type AutomatableParameter =
-  | 'inst-volume' | 'vocal-volume' | 'harmony-volume'
-  | 'vocal-eqLow' | 'vocal-eqMid' | 'vocal-eqHigh'
-  | 'harmony-eqLow' | 'harmony-eqMid' | 'harmony-eqHigh'
-  | 'vocal-reverb' | 'harmony-reverb'
-  | 'vocal-delay' | 'harmony-delay'
-  | 'master-volume';
+  | "inst-volume"
+  | "vocal-volume"
+  | "harmony-volume"
+  | "vocal-eqLow"
+  | "vocal-eqMid"
+  | "vocal-eqHigh"
+  | "harmony-eqLow"
+  | "harmony-eqMid"
+  | "harmony-eqHigh"
+  | "vocal-reverb"
+  | "harmony-reverb"
+  | "vocal-delay"
+  | "harmony-delay"
+  | "master-volume";
 
 export interface AutomationLaneData {
   id: string;
   parameter: AutomatableParameter;
   points: AutomationPoint[];
   enabled: boolean;
-  minValue: number;   // Actual min value for the parameter
-  maxValue: number;   // Actual max value for the parameter
+  minValue: number; // Actual min value for the parameter
+  maxValue: number; // Actual max value for the parameter
 }
 
 export interface AutomationState {

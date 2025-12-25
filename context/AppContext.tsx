@@ -146,7 +146,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           default:
             return step;
         }
-      })
+      }),
     );
   }, [generatedLyrics, instrumentalUrl, vocalUrl]);
 

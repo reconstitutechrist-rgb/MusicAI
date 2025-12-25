@@ -28,7 +28,14 @@ export interface TrackConfig {
 }
 
 // Export format types
-export type AudioFormat = 'wav-16' | 'wav-24' | 'wav-32' | 'mp3-128' | 'mp3-192' | 'mp3-256' | 'mp3-320';
+export type AudioFormat =
+  | "wav-16"
+  | "wav-24"
+  | "wav-32"
+  | "mp3-128"
+  | "mp3-192"
+  | "mp3-256"
+  | "mp3-320";
 
 export interface AudioFormatConfig {
   id: AudioFormat;
@@ -41,13 +48,62 @@ export interface AudioFormatConfig {
 }
 
 export const AUDIO_FORMATS: Record<AudioFormat, AudioFormatConfig> = {
-  'wav-16': { id: 'wav-16', name: 'WAV 16-bit', extension: 'wav', mimeType: 'audio/wav', description: 'CD quality, smaller files', bitDepth: 16 },
-  'wav-24': { id: 'wav-24', name: 'WAV 24-bit', extension: 'wav', mimeType: 'audio/wav', description: 'Studio quality, larger files', bitDepth: 24 },
-  'wav-32': { id: 'wav-32', name: 'WAV 32-bit Float', extension: 'wav', mimeType: 'audio/wav', description: 'Maximum quality, largest files', bitDepth: 32 },
-  'mp3-128': { id: 'mp3-128', name: 'MP3 128 kbps', extension: 'mp3', mimeType: 'audio/mpeg', description: 'Good for streaming', bitrate: 128 },
-  'mp3-192': { id: 'mp3-192', name: 'MP3 192 kbps', extension: 'mp3', mimeType: 'audio/mpeg', description: 'Better quality streaming', bitrate: 192 },
-  'mp3-256': { id: 'mp3-256', name: 'MP3 256 kbps', extension: 'mp3', mimeType: 'audio/mpeg', description: 'High quality', bitrate: 256 },
-  'mp3-320': { id: 'mp3-320', name: 'MP3 320 kbps', extension: 'mp3', mimeType: 'audio/mpeg', description: 'Maximum MP3 quality', bitrate: 320 }
+  "wav-16": {
+    id: "wav-16",
+    name: "WAV 16-bit",
+    extension: "wav",
+    mimeType: "audio/wav",
+    description: "CD quality, smaller files",
+    bitDepth: 16,
+  },
+  "wav-24": {
+    id: "wav-24",
+    name: "WAV 24-bit",
+    extension: "wav",
+    mimeType: "audio/wav",
+    description: "Studio quality, larger files",
+    bitDepth: 24,
+  },
+  "wav-32": {
+    id: "wav-32",
+    name: "WAV 32-bit Float",
+    extension: "wav",
+    mimeType: "audio/wav",
+    description: "Maximum quality, largest files",
+    bitDepth: 32,
+  },
+  "mp3-128": {
+    id: "mp3-128",
+    name: "MP3 128 kbps",
+    extension: "mp3",
+    mimeType: "audio/mpeg",
+    description: "Good for streaming",
+    bitrate: 128,
+  },
+  "mp3-192": {
+    id: "mp3-192",
+    name: "MP3 192 kbps",
+    extension: "mp3",
+    mimeType: "audio/mpeg",
+    description: "Better quality streaming",
+    bitrate: 192,
+  },
+  "mp3-256": {
+    id: "mp3-256",
+    name: "MP3 256 kbps",
+    extension: "mp3",
+    mimeType: "audio/mpeg",
+    description: "High quality",
+    bitrate: 256,
+  },
+  "mp3-320": {
+    id: "mp3-320",
+    name: "MP3 320 kbps",
+    extension: "mp3",
+    mimeType: "audio/mpeg",
+    description: "Maximum MP3 quality",
+    bitrate: 320,
+  },
 };
 
 export interface ExportOptions {
@@ -65,7 +121,10 @@ export interface ExportOptions {
  * @param buffer - The AudioBuffer to convert
  * @param bitDepth - 16, 24, or 32 (float)
  */
-export function bufferToWavBlob(buffer: AudioBuffer, bitDepth: 16 | 24 | 32 = 16): Blob {
+export function bufferToWavBlob(
+  buffer: AudioBuffer,
+  bitDepth: 16 | 24 | 32 = 16,
+): Blob {
   const numOfChan = buffer.numberOfChannels;
   const bytesPerSample = bitDepth / 8;
   const dataLength = buffer.length * numOfChan * bytesPerSample;
@@ -124,9 +183,9 @@ export function bufferToWavBlob(buffer: AudioBuffer, bitDepth: 16 | 24 | 32 = 16
         // 24-bit signed integer (stored in 3 bytes)
         const intSample = sample < 0 ? sample * 8388608 : sample * 8388607;
         const val = intSample | 0;
-        view.setUint8(pos, val & 0xFF);
-        view.setUint8(pos + 1, (val >> 8) & 0xFF);
-        view.setUint8(pos + 2, (val >> 16) & 0xFF);
+        view.setUint8(pos, val & 0xff);
+        view.setUint8(pos + 1, (val >> 8) & 0xff);
+        view.setUint8(pos + 2, (val >> 16) & 0xff);
         pos += 3;
       } else {
         // 32-bit float
@@ -136,7 +195,7 @@ export function bufferToWavBlob(buffer: AudioBuffer, bitDepth: 16 | 24 | 32 = 16
     }
   }
 
-  return new Blob([arrayBuffer], { type: 'audio/wav' });
+  return new Blob([arrayBuffer], { type: "audio/wav" });
 }
 
 /**
@@ -145,13 +204,13 @@ export function bufferToWavBlob(buffer: AudioBuffer, bitDepth: 16 | 24 | 32 = 16
  */
 export async function bufferToMp3Blob(
   buffer: AudioBuffer,
-  bitrate: number = 192
+  bitrate: number = 192,
 ): Promise<Blob> {
   // Check if MediaRecorder supports MP3
-  const mimeType = 'audio/webm;codecs=opus'; // Most browsers support this
+  const mimeType = "audio/webm;codecs=opus"; // Most browsers support this
 
   if (!MediaRecorder.isTypeSupported(mimeType)) {
-    console.warn('MP3/WebM encoding not supported, falling back to WAV');
+    console.warn("MP3/WebM encoding not supported, falling back to WAV");
     return bufferToWavBlob(buffer, 16);
   }
 
@@ -167,7 +226,7 @@ export async function bufferToMp3Blob(
 
       const mediaRecorder = new MediaRecorder(destination.stream, {
         mimeType,
-        audioBitsPerSecond: bitrate * 1000
+        audioBitsPerSecond: bitrate * 1000,
       });
 
       const chunks: Blob[] = [];
@@ -180,7 +239,7 @@ export async function bufferToMp3Blob(
 
       mediaRecorder.onstop = () => {
         audioContext.close();
-        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const blob = new Blob(chunks, { type: "audio/webm" });
         resolve(blob);
       };
 
@@ -196,7 +255,7 @@ export async function bufferToMp3Blob(
       mediaRecorder.start();
       source.start(0);
     } catch (error) {
-      console.warn('MP3 encoding failed, falling back to WAV:', error);
+      console.warn("MP3 encoding failed, falling back to WAV:", error);
       resolve(bufferToWavBlob(buffer, 16));
     }
   });
@@ -207,13 +266,13 @@ export async function bufferToMp3Blob(
  */
 export async function bufferToBlob(
   buffer: AudioBuffer,
-  format: AudioFormat
+  format: AudioFormat,
 ): Promise<Blob> {
   const config = AUDIO_FORMATS[format];
 
-  if (format.startsWith('wav-')) {
+  if (format.startsWith("wav-")) {
     return bufferToWavBlob(buffer, config.bitDepth as 16 | 24 | 32);
-  } else if (format.startsWith('mp3-')) {
+  } else if (format.startsWith("mp3-")) {
     return bufferToMp3Blob(buffer, config.bitrate);
   }
 
@@ -227,7 +286,7 @@ export async function bufferToBlob(
 export function createImpulseResponse(
   ctx: BaseAudioContext,
   duration: number,
-  decay: number
+  decay: number,
 ): AudioBuffer {
   const rate = ctx.sampleRate;
   const length = rate * duration;
@@ -250,7 +309,7 @@ export function createImpulseResponse(
  */
 export async function fetchAudioBuffer(
   url: string,
-  audioContext: AudioContext
+  audioContext: AudioContext,
 ): Promise<AudioBuffer> {
   const response = await fetch(url);
   const arrayBuffer = await response.arrayBuffer();
@@ -263,14 +322,14 @@ export async function fetchAudioBuffer(
 export async function renderMixOffline(
   tracks: TrackConfig[],
   sampleRate: number = 44100,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
 ): Promise<AudioBuffer> {
   if (tracks.length === 0) {
-    throw new Error('No tracks to render');
+    throw new Error("No tracks to render");
   }
 
   // Find the longest track duration
-  const maxDuration = Math.max(...tracks.map(t => t.buffer.duration));
+  const maxDuration = Math.max(...tracks.map((t) => t.buffer.duration));
   const frameCount = Math.ceil(maxDuration * sampleRate);
 
   // Create offline context
@@ -305,20 +364,20 @@ export async function renderMixOffline(
     } else {
       // Use 3-band legacy EQ
       const eqLow = offlineCtx.createBiquadFilter();
-      eqLow.type = 'lowshelf';
+      eqLow.type = "lowshelf";
       eqLow.frequency.value = 320;
       eqLow.gain.value = track.eqLow;
       eqFilters.push(eqLow);
 
       const eqMid = offlineCtx.createBiquadFilter();
-      eqMid.type = 'peaking';
+      eqMid.type = "peaking";
       eqMid.frequency.value = 1000;
       eqMid.Q.value = 1;
       eqMid.gain.value = track.eqMid;
       eqFilters.push(eqMid);
 
       const eqHigh = offlineCtx.createBiquadFilter();
-      eqHigh.type = 'highshelf';
+      eqHigh.type = "highshelf";
       eqHigh.frequency.value = 3200;
       eqHigh.gain.value = track.eqHigh;
       eqFilters.push(eqHigh);
@@ -364,7 +423,7 @@ export async function renderMixOffline(
 
     // Report progress
     if (onProgress) {
-      onProgress((i + 1) / tracks.length * 50);
+      onProgress(((i + 1) / tracks.length) * 50);
     }
   }
 
@@ -388,7 +447,7 @@ export async function renderMixOffline(
 export async function renderStemOffline(
   track: TrackConfig,
   applyFX: boolean,
-  sampleRate: number = 44100
+  sampleRate: number = 44100,
 ): Promise<AudioBuffer> {
   const frameCount = Math.ceil(track.buffer.duration * sampleRate);
   const offlineCtx = new OfflineAudioContext(2, frameCount, sampleRate);
@@ -417,20 +476,20 @@ export async function renderStemOffline(
     } else {
       // Use 3-band legacy EQ
       const eqLow = offlineCtx.createBiquadFilter();
-      eqLow.type = 'lowshelf';
+      eqLow.type = "lowshelf";
       eqLow.frequency.value = 320;
       eqLow.gain.value = track.eqLow;
       eqFilters.push(eqLow);
 
       const eqMid = offlineCtx.createBiquadFilter();
-      eqMid.type = 'peaking';
+      eqMid.type = "peaking";
       eqMid.frequency.value = 1000;
       eqMid.Q.value = 1;
       eqMid.gain.value = track.eqMid;
       eqFilters.push(eqMid);
 
       const eqHigh = offlineCtx.createBiquadFilter();
-      eqHigh.type = 'highshelf';
+      eqHigh.type = "highshelf";
       eqHigh.frequency.value = 3200;
       eqHigh.gain.value = track.eqHigh;
       eqFilters.push(eqHigh);
@@ -485,7 +544,7 @@ export async function renderStemOffline(
  */
 export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
@@ -499,9 +558,9 @@ export function downloadBlob(blob: Blob, filename: string): void {
  */
 export async function exportMixAsWav(
   tracks: TrackConfig[],
-  filename: string = 'mix.wav',
+  filename: string = "mix.wav",
   sampleRate: number = 44100,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
 ): Promise<void> {
   const renderedBuffer = await renderMixOffline(tracks, sampleRate, onProgress);
   const wavBlob = bufferToWavBlob(renderedBuffer);
@@ -514,14 +573,16 @@ export async function exportMixAsWav(
 export async function exportMix(
   tracks: TrackConfig[],
   filename: string,
-  format: AudioFormat = 'wav-16',
+  format: AudioFormat = "wav-16",
   sampleRate: number = 44100,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
 ): Promise<void> {
   const config = AUDIO_FORMATS[format];
   const renderedBuffer = await renderMixOffline(tracks, sampleRate, onProgress);
   const blob = await bufferToBlob(renderedBuffer, format);
-  const fullFilename = filename.includes('.') ? filename : `${filename}.${config.extension}`;
+  const fullFilename = filename.includes(".")
+    ? filename
+    : `${filename}.${config.extension}`;
   downloadBlob(blob, fullFilename);
 }
 
@@ -532,7 +593,7 @@ export async function exportStemsAsWav(
   stems: { name: string; track: TrackConfig }[],
   applyFX: boolean,
   sampleRate: number = 44100,
-  onProgress?: (current: number, total: number) => void
+  onProgress?: (current: number, total: number) => void,
 ): Promise<void> {
   for (let i = 0; i < stems.length; i++) {
     const { name, track } = stems[i];
@@ -552,9 +613,9 @@ export async function exportStemsAsWav(
 export async function exportStems(
   stems: { name: string; track: TrackConfig }[],
   applyFX: boolean,
-  format: AudioFormat = 'wav-16',
+  format: AudioFormat = "wav-16",
   sampleRate: number = 44100,
-  onProgress?: (current: number, total: number) => void
+  onProgress?: (current: number, total: number) => void,
 ): Promise<void> {
   const config = AUDIO_FORMATS[format];
 

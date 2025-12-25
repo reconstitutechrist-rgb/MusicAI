@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: integrate ElevenLabs Music API and add audio production features\n\n- Replace Suno API with ElevenLabs Eleven Music for high-quality 44.1kHz stereo output\n- Add elevenLabsMusicService.ts with music generation, instrumental, and vocal track support\n- Add VU meters with real-time audio level visualization\n- Add parametric EQ with adjustable frequency bands\n- Update MusicCreation to support dynamic MP3/WAV download formats\n- Fix TypeScript error in SocialMarketing video operation error handling\n- Add environment types for ElevenLabs API key\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: add professional audio metering and processing components\n\n- Add SpectrumAnalyzer with 64-band FFT, bars/line/filled modes, peak hold\n- Add LufsMeter with LUFS measurement and platform presets \\(Spotify/YouTube/Apple/Broadcast\\)\n- Add StereoFieldVisualizer with goniometer, correlation meter, and balance indicator\n- Add MultibandCompressor with 4-band dynamics and presets \\(Gentle/Punch/Broadcast/Vocal\\)\n- Integrate Pro Metering panel into AudioProduction mixer\n- Add audio metering types to types.ts\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(npm ls:*)",
+      "Bash(cat:*)",
+      "Bash(npm install:*)",
+      "Bash(npx prettier:*)"
+    ]
+  }
+}

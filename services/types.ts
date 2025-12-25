@@ -1,4 +1,3 @@
-
 export interface LyricsAndConcept {
   lyrics: string;
   concept: string;
@@ -38,7 +37,7 @@ export interface StructureSection {
 }
 
 export interface ChatMessage {
-  role: 'user' | 'model';
+  role: "user" | "model";
   text: string;
   translatedText?: string;
   // Properties for Music Creation conversational UI

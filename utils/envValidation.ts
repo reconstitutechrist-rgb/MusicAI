@@ -12,16 +12,12 @@ export interface EnvValidationResult {
 /**
  * Required environment variables for core functionality
  */
-const REQUIRED_ENV_VARS = [
-  'VITE_GEMINI_API_KEY',
-] as const;
+const REQUIRED_ENV_VARS = ["VITE_GEMINI_API_KEY"] as const;
 
 /**
  * Optional environment variables that enhance functionality
  */
-const OPTIONAL_ENV_VARS = [
-  'VITE_ELEVENLABS_API_KEY',
-] as const;
+const OPTIONAL_ENV_VARS = ["VITE_ELEVENLABS_API_KEY"] as const;
 
 /**
  * Validate all required environment variables
@@ -34,7 +30,7 @@ export function validateEnvironment(): EnvValidationResult {
   // Check required variables
   for (const varName of REQUIRED_ENV_VARS) {
     const value = import.meta.env[varName];
-    if (!value || typeof value !== 'string' || value.trim() === '') {
+    if (!value || typeof value !== "string" || value.trim() === "") {
       missing.push(varName);
     }
   }
@@ -42,8 +38,10 @@ export function validateEnvironment(): EnvValidationResult {
   // Check optional variables and warn if missing
   for (const varName of OPTIONAL_ENV_VARS) {
     const value = import.meta.env[varName];
-    if (!value || typeof value !== 'string' || value.trim() === '') {
-      warnings.push(`${varName} is not configured. Some features may be unavailable.`);
+    if (!value || typeof value !== "string" || value.trim() === "") {
+      warnings.push(
+        `${varName} is not configured. Some features may be unavailable.`,
+      );
     }
   }
 
@@ -60,10 +58,10 @@ export function validateEnvironment(): EnvValidationResult {
  */
 export function getRequiredEnv(varName: string): string {
   const value = import.meta.env[varName];
-  if (!value || typeof value !== 'string' || value.trim() === '') {
+  if (!value || typeof value !== "string" || value.trim() === "") {
     throw new Error(
       `Required environment variable ${varName} is not configured. ` +
-      `Please add it to your .env file.`
+        `Please add it to your .env file.`,
     );
   }
   return value;
@@ -75,7 +73,7 @@ export function getRequiredEnv(varName: string): string {
  */
 export function getOptionalEnv(varName: string): string | undefined {
   const value = import.meta.env[varName];
-  if (!value || typeof value !== 'string' || value.trim() === '') {
+  if (!value || typeof value !== "string" || value.trim() === "") {
     return undefined;
   }
   return value;
@@ -86,7 +84,7 @@ export function getOptionalEnv(varName: string): string | undefined {
  */
 export function isFeatureAvailable(featureEnvVar: string): boolean {
   const value = import.meta.env[featureEnvVar];
-  return !!value && typeof value === 'string' && value.trim() !== '';
+  return !!value && typeof value === "string" && value.trim() !== "";
 }
 
 /**
@@ -95,21 +93,21 @@ export function isFeatureAvailable(featureEnvVar: string): boolean {
 export function logValidationResults(result: EnvValidationResult): void {
   if (!result.isValid) {
     console.error(
-      '❌ Missing required environment variables:',
-      result.missing.join(', ')
+      "❌ Missing required environment variables:",
+      result.missing.join(", "),
     );
     console.error(
-      'Please create a .env file with the required variables. ' +
-      'See .env.example for reference.'
+      "Please create a .env file with the required variables. " +
+        "See .env.example for reference.",
     );
   }
 
   if (result.warnings.length > 0) {
-    console.warn('⚠️ Environment warnings:');
+    console.warn("⚠️ Environment warnings:");
     result.warnings.forEach((w) => console.warn(`  - ${w}`));
   }
 
   if (result.isValid && result.warnings.length === 0) {
-    console.log('✓ All environment variables configured correctly');
+    console.log("✓ All environment variables configured correctly");
   }
 }
