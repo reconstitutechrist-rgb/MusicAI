@@ -162,3 +162,36 @@ export interface MasterBusConfig {
   enableStereoAnalysis: boolean;
   enableMultibandCompressor: boolean;
 }
+
+// Automation Types
+export type AutomationCurveType = 'linear' | 'exponential' | 'hold' | 'smooth';
+
+export interface AutomationPoint {
+  id: string;
+  time: number;       // Position in seconds
+  value: number;      // Normalized 0-1 value
+  curve: AutomationCurveType;  // Interpolation to next point
+}
+
+export type AutomatableParameter =
+  | 'inst-volume' | 'vocal-volume' | 'harmony-volume'
+  | 'vocal-eqLow' | 'vocal-eqMid' | 'vocal-eqHigh'
+  | 'harmony-eqLow' | 'harmony-eqMid' | 'harmony-eqHigh'
+  | 'vocal-reverb' | 'harmony-reverb'
+  | 'vocal-delay' | 'harmony-delay'
+  | 'master-volume';
+
+export interface AutomationLaneData {
+  id: string;
+  parameter: AutomatableParameter;
+  points: AutomationPoint[];
+  enabled: boolean;
+  minValue: number;   // Actual min value for the parameter
+  maxValue: number;   // Actual max value for the parameter
+}
+
+export interface AutomationState {
+  lanes: AutomationLaneData[];
+  isRecording: boolean;
+  isPlaying: boolean;
+}
