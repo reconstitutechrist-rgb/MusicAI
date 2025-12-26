@@ -23,7 +23,27 @@ const SongMerger: React.FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodesRef = useRef<AudioBufferSourceNode[]>([]);
   const gainNodesRef = useRef<GainNode[]>([]);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
+
+  const generateId = () => Math.random().toString(36).substring(2, 9);
+
+  const stopPlayback = useCallback(() => {
+    sourceNodesRef.current.forEach((node) => {
+      try {
+        node.stop();
+      } catch (e) {
+        // Node might already be stopped
+      }
+    });
+    sourceNodesRef.current = [];
+    gainNodesRef.current = [];
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+
+    setIsPlaying(false);
+  }, []);
 
   // Initialize Audio Context
   useEffect(() => {
@@ -32,9 +52,7 @@ const SongMerger: React.FC = () => {
       stopPlayback();
       audioContextRef.current?.close();
     };
-  }, []);
-
-  const generateId = () => Math.random().toString(36).substring(2, 9);
+  }, [stopPlayback]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -174,24 +192,6 @@ const SongMerger: React.FC = () => {
 
     animationFrameRef.current = requestAnimationFrame(updateTime);
     setIsPlaying(true);
-  };
-
-  const stopPlayback = () => {
-    sourceNodesRef.current.forEach((node) => {
-      try {
-        node.stop();
-      } catch (e) {
-        // Node might already be stopped
-      }
-    });
-    sourceNodesRef.current = [];
-    gainNodesRef.current = [];
-
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-
-    setIsPlaying(false);
   };
 
   const handlePlayPause = () => {
@@ -488,7 +488,7 @@ const SongMerger: React.FC = () => {
 
             <Button
               onClick={handleExport}
-              variant="success"
+              variant="primary"
               disabled={segments.length === 0}
             >
               <svg

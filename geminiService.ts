@@ -12,7 +12,7 @@ import {
   SongData,
   StructureSection,
   AudioAnalysisResult,
-} from "../types";
+} from "./types";
 
 let ai: GoogleGenAI;
 
