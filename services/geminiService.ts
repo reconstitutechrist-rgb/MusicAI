@@ -1242,8 +1242,6 @@ export const mergeAudioSegments = async (
   }>,
   mergeStrategy: string,
 ): Promise<string> => {
-  const ai = getAi();
-  
   // For now, we'll concatenate the segments with crossfades using the native audio model
   // In a production app, you'd do more sophisticated client-side audio processing
   
@@ -1258,3 +1256,4 @@ export const mergeAudioSegments = async (
   // Use the audio processing capability
   return await processAudioTrack(segments[0].audioBase64, prompt);
 };
+

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { TimelineSegment } from "../../types";
 
 interface TimelineEditorProps {
@@ -38,7 +38,7 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
     setSelectedSegment(segmentId);
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!draggingSegment) return;
 
     const deltaX = e.clientX - dragStartX;
@@ -50,11 +50,11 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
     );
 
     onSegmentsChange(updatedSegments);
-  };
+  }, [draggingSegment, dragStartX, dragStartTime, pixelsPerSecond, segments, onSegmentsChange]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setDraggingSegment(null);
-  };
+  }, []);
 
   useEffect(() => {
     if (draggingSegment) {
@@ -65,7 +65,7 @@ const TimelineEditor: React.FC<TimelineEditorProps> = ({
         window.removeEventListener("mouseup", handleMouseUp);
       };
     }
-  }, [draggingSegment, dragStartX, dragStartTime]);
+  }, [draggingSegment, handleMouseMove, handleMouseUp]);
 
   const handleTimelineClick = (e: React.MouseEvent) => {
     if (draggingSegment) return;

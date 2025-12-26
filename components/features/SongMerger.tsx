@@ -65,40 +65,48 @@ const SongMerger: React.FC = () => {
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const arrayBuffer = await file.arrayBuffer();
-        const audioBuffer = await audioContextRef.current!.decodeAudioData(
-          arrayBuffer,
-        );
+        
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const audioBuffer = await audioContextRef.current!.decodeAudioData(
+            arrayBuffer,
+          );
 
-        // Calculate position for new segment (place after existing segments)
-        const lastSegmentEnd =
-          segments.length > 0
-            ? Math.max(
-                ...segments.map((s) => s.startTime + s.duration - s.trimEnd),
-              )
-            : 0;
+          // Calculate position for new segment (place after existing segments)
+          const lastSegmentEnd =
+            segments.length > 0
+              ? Math.max(
+                  ...segments.map((s) => s.startTime + s.duration - s.trimEnd),
+                )
+              : 0;
 
-        const segment: TimelineSegment = {
-          id: generateId(),
-          audioUrl: URL.createObjectURL(file),
-          audioBuffer: audioBuffer,
-          title: file.name.replace(/\.[^/.]+$/, ""),
-          startTime: lastSegmentEnd,
-          duration: audioBuffer.duration,
-          trimStart: 0,
-          trimEnd: 0,
-          volume: 1,
-          fadeIn: 0.5,
-          fadeOut: 0.5,
-        };
+          const segment: TimelineSegment = {
+            id: generateId(),
+            audioUrl: URL.createObjectURL(file),
+            audioBuffer: audioBuffer,
+            title: file.name.replace(/\.[^/.]+$/, ""),
+            startTime: lastSegmentEnd,
+            duration: audioBuffer.duration,
+            trimStart: 0,
+            trimEnd: 0,
+            volume: 1,
+            fadeIn: 0.5,
+            fadeOut: 0.5,
+          };
 
-        newSegments.push(segment);
+          newSegments.push(segment);
+        } catch (decodeError) {
+          console.error(`Failed to decode ${file.name}:`, decodeError);
+          setError(`Failed to decode "${file.name}". This file may be corrupted or in an unsupported format. Please try a different file.`);
+        }
       }
 
-      setSegments([...segments, ...newSegments]);
+      if (newSegments.length > 0) {
+        setSegments([...segments, ...newSegments]);
+      }
     } catch (err) {
       console.error(err);
-      setError("Failed to load audio files. Please ensure they are valid audio files.");
+      setError("Failed to load audio files. Please ensure they are valid audio files and your browser supports the Web Audio API.");
     }
   };
 
