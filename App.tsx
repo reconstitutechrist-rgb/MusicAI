@@ -167,7 +167,12 @@ const App: React.FC = () => {
         );
       case "video":
         return (
-          <VideoCreation lyrics={generatedLyrics} songConcept={songConcept} />
+          <VideoCreation
+            lyrics={generatedLyrics}
+            songConcept={songConcept}
+            instrumentalUrl={instrumentalUrl}
+            vocalUrl={vocalUrl}
+          />
         );
       case "market":
         return (

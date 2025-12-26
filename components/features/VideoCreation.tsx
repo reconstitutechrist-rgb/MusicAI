@@ -15,10 +15,15 @@ import {
 } from "../../services/geminiService";
 import { ChatMessage } from "../../types";
 import { useUndoRedo } from "./MusicCreation";
+import CompleteMusicVideo from "./CompleteMusicVideo";
 
 interface VideoCreationProps {
   lyrics: string;
   songConcept: string;
+  songStyle?: string;
+  instrumentalUrl?: string;
+  vocalUrl?: string;
+  songDuration?: number;
 }
 
 const fileToBase64 = (file: File): Promise<string> =>
@@ -842,7 +847,11 @@ const VideoCreation: React.FC<VideoCreationProps> = (props) => {
 
   const tabs = [
     {
-      name: "Music Video",
+      name: "⚡ Complete Music Video",
+      content: <CompleteMusicVideo {...props} />,
+    },
+    {
+      name: "Custom Video",
       content: (
         <MusicVideoGenerator {...props} imageFromStudio={currentImage} />
       ),

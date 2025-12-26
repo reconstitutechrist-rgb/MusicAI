@@ -945,6 +945,139 @@ export const generateChatTitle = async (
   }
 };
 
+// --- Music Video Services ---
+
+/**
+ * Automatically generate video scene prompts from song structure
+ * This eliminates the need for manual chat-based concept development
+ * @param lyrics - Full song lyrics with structure tags
+ * @param songConcept - High-level concept/theme of the song
+ * @param style - Musical style (for pacing/mood)
+ * @param targetDuration - Target video duration in seconds
+ * @returns Array of scene prompts ready for video generation
+ */
+export const generateAutoVideoScenes = async (
+  lyrics: string,
+  songConcept: string,
+  style: string,
+  targetDuration: number = 180, // Default 3 minutes
+): Promise<string[]> => {
+  const ai = getAi();
+
+  // Calculate number of scenes needed (7 seconds per scene)
+  const scenesNeeded = Math.ceil(targetDuration / 7);
+
+  const responseSchema = {
+    type: Type.OBJECT,
+    properties: {
+      scenes: {
+        type: Type.ARRAY,
+        description:
+          "Array of detailed video scene prompts, each 7 seconds long",
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            sectionName: {
+              type: Type.STRING,
+              description: "Song section (Intro, Verse 1, Chorus, etc.)",
+            },
+            visualPrompt: {
+              type: Type.STRING,
+              description:
+                "Detailed cinematic prompt for Veo video generator with camera angles, lighting, mood, and visual style",
+            },
+            narrative: {
+              type: Type.STRING,
+              description: "Brief story/emotion for this scene",
+            },
+          },
+          required: ["sectionName", "visualPrompt", "narrative"],
+        },
+      },
+      overallStyle: {
+        type: Type.STRING,
+        description:
+          "Overall visual style for the music video (cinematic, abstract, performance, narrative, etc.)",
+      },
+      colorPalette: {
+        type: Type.STRING,
+        description: "Dominant color scheme for the video",
+      },
+    },
+    required: ["scenes", "overallStyle", "colorPalette"],
+  };
+
+  const prompt = `You are a professional music video director. Create a complete storyboard for a music video.
+
+Song Concept: ${songConcept}
+Musical Style: ${style}
+Target Duration: ${targetDuration} seconds (approximately ${scenesNeeded} scenes of 7 seconds each)
+
+Lyrics:
+${lyrics}
+
+TASK: Generate ${scenesNeeded} video scene prompts that tell a cohesive visual story.
+
+REQUIREMENTS:
+1. Analyze the lyric structure ([Intro], [Verse], [Chorus], [Bridge], etc.)
+2. Create scenes that match the emotional arc of each section
+3. Ensure visual continuity between scenes (smooth transitions)
+4. Each scene prompt must be HIGHLY DETAILED for an AI video generator:
+   - Specific camera angles (wide shot, close-up, tracking shot, drone view)
+   - Lighting description (golden hour, neon lights, dramatic shadows, soft diffused)
+   - Color grading (warm tones, cool blues, high contrast, desaturated)
+   - Motion/action in the scene
+   - Mood and atmosphere
+5. Match the pacing to the musical style:
+   - Fast-paced styles (EDM, Hip-Hop) = quick cuts, dynamic camera movement
+   - Slow styles (Ballad, R&B) = lingering shots, smooth camera moves
+6. Create variety: Mix performance shots, abstract visuals, narrative scenes, and symbolic imagery
+7. Reference the song concept throughout to maintain thematic coherence
+
+EXAMPLE OUTPUT STRUCTURE:
+{
+  "scenes": [
+    {
+      "sectionName": "Intro",
+      "visualPrompt": "Cinematic drone shot rising over a misty cityscape at dawn, warm golden light breaking through clouds, camera slowly rotating to reveal skyscrapers silhouetted against the vibrant orange sky, atmospheric and ethereal mood, 4K quality, film grain texture",
+      "narrative": "Setting the scene of urban isolation and new beginnings"
+    },
+    ...
+  ],
+  "overallStyle": "Cinematic narrative with abstract elements",
+  "colorPalette": "Warm golden tones transitioning to cool blues"
+}
+
+Output the complete storyboard now.`;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-3-pro-preview",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: responseSchema,
+      temperature: 0.9, // Higher creativity for visual concepts
+    },
+  });
+
+  const parsed = safeJsonParse<{
+    scenes: Array<{
+      sectionName: string;
+      visualPrompt: string;
+      narrative: string;
+    }>;
+    overallStyle: string;
+    colorPalette: string;
+  }>(result.text.trim(), "auto video scene generation");
+
+  if (!parsed.scenes || !Array.isArray(parsed.scenes)) {
+    throw new Error("Invalid scene generation response: missing scenes array");
+  }
+
+  // Extract just the visual prompts
+  return parsed.scenes.map((scene) => scene.visualPrompt);
+};
+
 // --- Karaoke Services ---
 
 /**
