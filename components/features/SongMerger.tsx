@@ -97,7 +97,7 @@ const SongMerger: React.FC = () => {
           newSegments.push(segment);
         } catch (decodeError) {
           console.error(`Failed to decode ${file.name}:`, decodeError);
-          setError(`Failed to decode "${file.name}". This file may be corrupted or in an unsupported format. Please try a different file.`);
+          setError(`Failed to decode "${file.name}". This file may be corrupted or in an unsupported format. Supported formats include MP3, WAV, FLAC, AAC, OGG, and M4A.`);
         }
       }
 
@@ -106,7 +106,7 @@ const SongMerger: React.FC = () => {
       }
     } catch (err) {
       console.error(err);
-      setError("Failed to load audio files. Please ensure they are valid audio files and your browser supports the Web Audio API.");
+      setError("Failed to load audio files. Please ensure they are valid audio files and your browser supports the Web Audio API. Try using Chrome or Firefox, or check if files are corrupted.");
     }
   };
 
@@ -250,11 +250,13 @@ const SongMerger: React.FC = () => {
 
     try {
       // Convert audio buffers to base64 for analysis (sample first 10 seconds)
+      // TODO: Implement actual audio encoding to base64 for full AI analysis
+      // For now, AI will analyze based on metadata (title, duration) only
       const segmentData = segments.map((s) => ({
         id: s.id,
         title: s.title,
         duration: s.duration,
-        audioBase64: "", // In a full implementation, you'd encode audio here
+        audioBase64: "", // Placeholder - future enhancement to include actual audio samples
       }));
 
       const result = await analyzeSongMerge(
