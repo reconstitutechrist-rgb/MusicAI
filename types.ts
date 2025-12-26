@@ -207,3 +207,79 @@ export interface AutomationState {
   isRecording: boolean;
   isPlaying: boolean;
 }
+
+// Karaoke Feature Types
+
+/**
+ * Represents a single line of lyrics with timing information for karaoke sync
+ */
+export interface LyricLine {
+  id: string;
+  text: string;
+  startTime: number; // in seconds
+  endTime: number; // in seconds
+  sectionTag?: string; // e.g., "[Verse 1]", "[Chorus]"
+}
+
+/**
+ * Complete karaoke song data with timing information
+ */
+export interface KaraokeSong {
+  id: string;
+  songData: SongData;
+  instrumentalUrl: string;
+  vocalUrl?: string; // Original AI vocal for reference
+  duration: number; // Total duration in seconds
+  lyricLines: LyricLine[];
+  bpm?: number;
+  key?: string;
+  createdAt: number;
+}
+
+/**
+ * Recording session state for karaoke mode
+ */
+export interface KaraokeRecordingState {
+  isRecording: boolean;
+  isPreviewing: boolean;
+  recordedBlobUrl: string | null;
+  recordedBlob: Blob | null;
+  recordingStartTime: number | null;
+  recordingDuration: number;
+}
+
+/**
+ * Type of vocal enhancement applied to recording
+ */
+export type VocalEnhancementType = "ai-enhanced" | "manual-edit" | "raw";
+
+/**
+ * Result of recording enhancement process
+ */
+export interface RecordingEnhancementResult {
+  type: VocalEnhancementType;
+  processedUrl: string;
+  processingApplied?: string[]; // e.g., ['auto-tune', 'reverb']
+}
+
+/**
+ * Manual timing adjustment for a lyric line
+ */
+export interface LyricTimingAdjustment {
+  lineId: string;
+  offsetMs: number; // Positive = delay, Negative = advance
+}
+
+/**
+ * Response from AI lyrics timing generation
+ */
+export interface LyricsTimingResponse {
+  lyricLines: {
+    text: string;
+    startTime: number;
+    endTime: number;
+    sectionTag?: string;
+  }[];
+  estimatedBpm?: number;
+  estimatedKey?: string;
+}

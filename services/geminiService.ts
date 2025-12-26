@@ -13,6 +13,7 @@ import {
   SongData,
   StructureSection,
   AudioAnalysisResult,
+  LyricsTimingResponse,
 } from "../types";
 
 let ai: GoogleGenAI;
@@ -942,4 +943,129 @@ export const generateChatTitle = async (
     console.error("Title generation failed:", error);
     return `Conversation started...`;
   }
+};
+
+// --- Karaoke Services ---
+
+/**
+ * Generates synchronized timing data for lyrics based on song duration and style
+ * @param lyrics - Full lyrics text with structure tags like [Verse], [Chorus]
+ * @param duration - Total song duration in seconds
+ * @param style - Musical style for tempo estimation
+ */
+export const generateLyricsTiming = async (
+  lyrics: string,
+  duration: number,
+  style: string,
+): Promise<LyricsTimingResponse> => {
+  const ai = getAi();
+
+  const responseSchema = {
+    type: Type.OBJECT,
+    properties: {
+      lyricLines: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            text: { type: Type.STRING, description: "The lyric line text" },
+            startTime: {
+              type: Type.NUMBER,
+              description: "Start time in seconds",
+            },
+            endTime: { type: Type.NUMBER, description: "End time in seconds" },
+            sectionTag: {
+              type: Type.STRING,
+              description:
+                "Section tag like [Verse 1] if this line starts a new section",
+            },
+          },
+          required: ["text", "startTime", "endTime"],
+        },
+      },
+      estimatedBpm: {
+        type: Type.NUMBER,
+        description: "Estimated BPM based on style",
+      },
+      estimatedKey: {
+        type: Type.STRING,
+        description: "Estimated musical key",
+      },
+    },
+    required: ["lyricLines"],
+  };
+
+  const prompt = `Analyze these song lyrics and generate precise timing data for karaoke display.
+
+Song Style: ${style}
+Total Duration: ${duration} seconds
+Lyrics:
+${lyrics}
+
+Guidelines:
+1. Parse structure tags like [Intro], [Verse], [Chorus], [Bridge], [Outro]
+2. Account for instrumental intros (typically 8-16 seconds) before first lyrics
+3. Estimate BPM from the style (e.g., ballad=60-80, pop=100-130, hip-hop=80-115, rock=110-140)
+4. Space lines according to natural singing pace for the genre
+5. Add breathing room between sections (1-2 seconds)
+6. Ensure endTime of each line <= startTime of next line
+7. Last line endTime should not exceed total duration
+8. For each section tag found, include it in the sectionTag field of the FIRST line of that section
+
+Return timing data for each lyric line with start/end times in seconds.`;
+
+  const result = await ai.models.generateContent({
+    model: "gemini-3-pro-preview",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: responseSchema,
+    },
+  });
+
+  return safeJsonParse<LyricsTimingResponse>(
+    result.text.trim(),
+    "lyrics timing generation",
+  );
+};
+
+/**
+ * Enhances recorded karaoke vocals with auto-tune and reverb
+ * @param audioBase64 - Base64 encoded audio data
+ * @param options - Enhancement options (autoTune, reverb, key)
+ */
+export const enhanceKaraokeVocal = async (
+  audioBase64: string,
+  options: { autoTune: boolean; reverb: boolean; key?: string },
+): Promise<string> => {
+  const enhancements: string[] = [];
+
+  if (options.autoTune) {
+    enhancements.push(
+      options.key
+        ? `gentle pitch correction tuned to the key of ${options.key}`
+        : "gentle pitch correction to the nearest note",
+    );
+  }
+
+  if (options.reverb) {
+    enhancements.push("subtle studio reverb for warmth and depth");
+  }
+
+  if (enhancements.length === 0) {
+    // No enhancements requested, return original
+    return audioBase64;
+  }
+
+  const prompt = `Enhance this vocal recording for karaoke. Apply: ${enhancements.join(", ")}.
+
+IMPORTANT GUIDELINES:
+- Keep the natural character and emotion of the voice
+- Improve pitch accuracy subtly without making it sound robotic
+- Add professional polish while preserving the original performance feel
+- Do NOT change the tempo or timing
+- Do NOT alter the volume drastically
+- The result should sound like a polished studio recording`;
+
+  return processAudioTrack(audioBase64, prompt);
 };

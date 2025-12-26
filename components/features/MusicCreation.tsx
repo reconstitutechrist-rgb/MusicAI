@@ -8,6 +8,7 @@ import {
   generateInstrumentalTrack,
   generateSongStructure,
   generateSpeech,
+  generateLyricsTiming,
 } from "../../services/geminiService";
 import {
   isElevenLabsConfigured,
@@ -15,7 +16,12 @@ import {
   generateSongWithLyrics,
   createAudioUrl,
 } from "../../services/elevenLabsMusicService";
-import { ChatMessage, SongData, StructureSection } from "../../types";
+import {
+  ChatMessage,
+  SongData,
+  StructureSection,
+  KaraokeSong,
+} from "../../types";
 import { useLiveRegion } from "../ui/LiveRegion";
 import { useToastHelpers } from "../ui/Toast";
 
@@ -432,6 +438,7 @@ interface MusicCreationProps {
     audioUrl?: string,
     vocalUrl?: string,
   ) => void;
+  onSendToKaraoke?: (song: KaraokeSong) => void;
 }
 
 const initialMessages: ChatMessage[] = [
@@ -450,7 +457,10 @@ const SUGGESTED_STYLES = [
   "Ambient Chill",
 ];
 
-const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
+const MusicCreation: React.FC<MusicCreationProps> = ({
+  onLyricsGenerated,
+  onSendToKaraoke,
+}) => {
   // State
   const [chatMessages, setChatMessages] =
     useState<ChatMessage[]>(initialMessages);
@@ -470,6 +480,7 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 768 : false,
   );
+  const [isPreparingKaraoke, setIsPreparingKaraoke] = useState(false);
 
   // Refs
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -875,6 +886,67 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
     }
   };
 
+  // Send to Karaoke Mode - generates timing and creates KaraokeSong
+  const handleSendToKaraoke = useCallback(async () => {
+    if (!latestSongData || !latestAudioUrl || !onSendToKaraoke) return;
+
+    setIsPreparingKaraoke(true);
+    announce("Preparing song for karaoke mode...", "polite");
+
+    try {
+      // Get duration from audio element
+      const audio = new Audio(latestAudioUrl);
+      await new Promise<void>((resolve, reject) => {
+        audio.onloadedmetadata = () => resolve();
+        audio.onerror = () => reject(new Error("Failed to load audio"));
+      });
+      const duration = audio.duration;
+
+      // Generate lyrics timing using AI
+      const timingResult = await generateLyricsTiming(
+        latestSongData.lyrics,
+        duration,
+        latestSongData.style,
+      );
+
+      // Create KaraokeSong object
+      const karaokeSong: KaraokeSong = {
+        id: `karaoke-${Date.now()}`,
+        songData: latestSongData,
+        instrumentalUrl: latestAudioUrl,
+        vocalUrl: latestVocalUrl,
+        duration: duration,
+        lyricLines: timingResult.lyricLines.map((line, index) => ({
+          id: `line-${index}`,
+          text: line.text,
+          startTime: line.startTime,
+          endTime: line.endTime,
+          sectionTag: line.sectionTag,
+        })),
+        bpm: timingResult.estimatedBpm,
+        key: timingResult.estimatedKey,
+        createdAt: Date.now(),
+      };
+
+      onSendToKaraoke(karaokeSong);
+      toast.success("Song ready for karaoke!");
+      announce("Song prepared for karaoke mode", "polite");
+    } catch (error) {
+      console.error("Failed to prepare karaoke:", error);
+      toast.error("Failed to prepare song for karaoke. Please try again.");
+      announce("Failed to prepare karaoke", "assertive");
+    } finally {
+      setIsPreparingKaraoke(false);
+    }
+  }, [
+    latestSongData,
+    latestAudioUrl,
+    latestVocalUrl,
+    onSendToKaraoke,
+    toast,
+    announce,
+  ]);
+
   // Copy lyrics to clipboard
   const handleCopyLyrics = useCallback(
     async (lyrics: string) => {
@@ -1252,7 +1324,7 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
           </div>
         </Card>
       </div>
-      <div className="mt-6 flex justify-center">
+      <div className="mt-6 flex justify-center gap-4">
         <Button
           onClick={handleProceed}
           variant="primary"
@@ -1262,6 +1334,18 @@ const MusicCreation: React.FC<MusicCreationProps> = ({ onLyricsGenerated }) => {
         >
           Proceed to Audio Production &raquo;
         </Button>
+        {onSendToKaraoke && latestAudioUrl && (
+          <Button
+            onClick={handleSendToKaraoke}
+            variant="gradient"
+            size="lg"
+            disabled={!latestSongData || !latestAudioUrl || isPreparingKaraoke}
+            isLoading={isPreparingKaraoke}
+            aria-label="Send song to karaoke mode"
+          >
+            🎤 Send to Karaoke
+          </Button>
+        )}
       </div>
     </Page>
   );

@@ -30,7 +30,10 @@ import {
   AudioAnalysisResult,
   AutomationLaneData,
   AutomatableParameter,
+  KaraokeSong,
+  RecordingEnhancementResult,
 } from "../../types";
+import KaraokeMode from "./KaraokeMode";
 import AutomationLane, {
   getValueAtTime,
   denormalizeValue,
@@ -64,6 +67,8 @@ interface AudioProductionProps {
   lyrics: string;
   instrumentalUrl?: string;
   initialVocalUrl?: string;
+  karaokeSongs?: KaraokeSong[];
+  initialKaraokeMode?: boolean;
 }
 
 interface TrackFX {
@@ -316,9 +321,16 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
   lyrics,
   instrumentalUrl,
   initialVocalUrl,
+  karaokeSongs = [],
+  initialKaraokeMode = false,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Karaoke Mode State
+  const [isKaraokeMode, setIsKaraokeMode] = useState(initialKaraokeMode);
+  const [availableKaraokeSongs, setAvailableKaraokeSongs] =
+    useState<KaraokeSong[]>(karaokeSongs);
   const [vocalAudioUrl, setVocalAudioUrl] = useState<string | null>(null);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [selectedVoice, setSelectedVoice] = useState("Kore");
@@ -2558,6 +2570,49 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
     </div>
   );
 
+  // Karaoke Mode Handlers
+  const handleKaraokeRecordingComplete = useCallback(
+    (result: RecordingEnhancementResult) => {
+      if (result.type === "manual-edit") {
+        setVocalAudioUrl(result.processedUrl);
+        setIsKaraokeMode(false);
+      }
+    },
+    [],
+  );
+
+  const handleOpenInMixer = useCallback((recordingUrl: string) => {
+    setVocalAudioUrl(recordingUrl);
+    setIsKaraokeMode(false);
+  }, []);
+
+  const handleBackToMixer = useCallback(() => {
+    setIsKaraokeMode(false);
+  }, []);
+
+  // Add a karaoke song to the list
+  const addKaraokeSong = useCallback((song: KaraokeSong) => {
+    setAvailableKaraokeSongs((prev) => [...prev, song]);
+  }, []);
+
+  // Render Karaoke Mode
+  if (isKaraokeMode) {
+    return (
+      <Page
+        title="Audio Production"
+        description="Karaoke mode - Sing along and record your vocals"
+      >
+        <KaraokeMode
+          availableSongs={availableKaraokeSongs}
+          audioContext={audioContext}
+          onRecordingComplete={handleKaraokeRecordingComplete}
+          onOpenInMixer={handleOpenInMixer}
+          onBackToMixer={handleBackToMixer}
+        />
+      </Page>
+    );
+  }
+
   return (
     <Page
       title="Audio Production"
@@ -2627,6 +2682,14 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                   Studio Mixer
                 </h3>
                 <div className="flex items-center gap-2">
+                  {availableKaraokeSongs.length > 0 && (
+                    <button
+                      onClick={() => setIsKaraokeMode(true)}
+                      className="text-xs px-3 py-1 rounded-full transition-colors bg-pink-600/20 text-pink-400 border border-pink-500/50 hover:bg-pink-600/30 flex items-center gap-1"
+                    >
+                      <span>🎤</span> Karaoke Mode
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowInstrumentalSwapModal(true)}
                     className="text-xs px-3 py-1 rounded-full transition-colors bg-purple-600/20 text-purple-400 border border-purple-500/50 hover:bg-purple-600/30"

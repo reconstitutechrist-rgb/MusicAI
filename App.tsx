@@ -33,6 +33,7 @@ import {
   HamburgerButton,
   AppSection,
 } from "./components/ui/MobileNav";
+import { KaraokeSong } from "./types";
 
 type View =
   | "create"
@@ -60,6 +61,8 @@ const App: React.FC = () => {
   const [activeView, setActiveView] = useState<View>("create");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [karaokeSongs, setKaraokeSongs] = useState<KaraokeSong[]>([]);
+  const [startInKaraokeMode, setStartInKaraokeMode] = useState(false);
 
   // Handle responsive breakpoint
   useEffect(() => {
@@ -128,16 +131,38 @@ const App: React.FC = () => {
     [],
   );
 
+  const handleSendToKaraoke = useCallback((song: KaraokeSong) => {
+    setKaraokeSongs((prev) => [...prev, song]);
+    setStartInKaraokeMode(true);
+    setActiveView("produce");
+  }, []);
+
+  // Reset karaoke mode flag after navigation
+  useEffect(() => {
+    if (startInKaraokeMode && activeView === "produce") {
+      // Reset after a short delay to ensure the component has mounted with the flag
+      const timer = setTimeout(() => setStartInKaraokeMode(false), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [startInKaraokeMode, activeView]);
+
   const renderView = () => {
     switch (activeView) {
       case "create":
-        return <MusicCreation onLyricsGenerated={handleLyricsGenerated} />;
+        return (
+          <MusicCreation
+            onLyricsGenerated={handleLyricsGenerated}
+            onSendToKaraoke={handleSendToKaraoke}
+          />
+        );
       case "produce":
         return (
           <AudioProduction
             lyrics={generatedLyrics}
             instrumentalUrl={instrumentalUrl}
             initialVocalUrl={vocalUrl}
+            karaokeSongs={karaokeSongs}
+            initialKaraokeMode={startInKaraokeMode}
           />
         );
       case "video":
@@ -162,7 +187,12 @@ const App: React.FC = () => {
       case "remix":
         return <RemixStudio />;
       default:
-        return <MusicCreation onLyricsGenerated={handleLyricsGenerated} />;
+        return (
+          <MusicCreation
+            onLyricsGenerated={handleLyricsGenerated}
+            onSendToKaraoke={handleSendToKaraoke}
+          />
+        );
     }
   };
 
