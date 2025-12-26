@@ -14,6 +14,7 @@ import {
   LyricLabIcon,
   AnalyzerIcon,
   RemixIcon,
+  MergeIcon,
 } from "./constants";
 import MusicCreation from "./components/features/MusicCreation";
 import AudioProduction from "./components/features/AudioProduction";
@@ -23,6 +24,7 @@ import AiAssistant from "./components/features/AiAssistant";
 import LyricLab from "./components/features/LyricLab";
 import AudioAnalyzer from "./components/features/AudioAnalyzer";
 import RemixStudio from "./components/features/RemixStudio";
+import SongMerger from "./components/features/SongMerger";
 import ToastContainer from "./components/ui/ToastContainer";
 import ThemeToggle from "./components/ui/ThemeToggle";
 import { useTheme, useMusicState } from "./context/AppContext";
@@ -43,7 +45,8 @@ type View =
   | "assist"
   | "lab"
   | "analyze"
-  | "remix";
+  | "remix"
+  | "merge";
 
 const App: React.FC = () => {
   const { theme, setTheme } = useTheme();
@@ -83,6 +86,7 @@ const App: React.FC = () => {
       case "produce":
       case "remix":
       case "analyze":
+      case "merge":
         return "production";
       case "video":
       case "market":
@@ -186,6 +190,8 @@ const App: React.FC = () => {
         return <AudioAnalyzer />;
       case "remix":
         return <RemixStudio />;
+      case "merge":
+        return <SongMerger />;
       default:
         return (
           <MusicCreation
@@ -310,6 +316,12 @@ const App: React.FC = () => {
                 text="Remix Studio"
                 active={activeView === "remix"}
                 onClick={() => setActiveView("remix")}
+              />
+              <SidebarItem
+                icon={<MergeIcon className="h-5 w-5" />}
+                text="Song Merger"
+                active={activeView === "merge"}
+                onClick={() => setActiveView("merge")}
               />
               <SidebarItem
                 icon={<AnalyzerIcon className="h-5 w-5" />}

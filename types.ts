@@ -283,3 +283,69 @@ export interface LyricsTimingResponse {
   estimatedBpm?: number;
   estimatedKey?: string;
 }
+
+// Song Merger Types
+
+/**
+ * Represents a song segment on the timeline
+ */
+export interface TimelineSegment {
+  id: string;
+  audioUrl: string;
+  audioBuffer?: AudioBuffer;
+  title: string;
+  startTime: number; // Position on timeline in seconds
+  duration: number; // Duration of the segment in seconds
+  trimStart: number; // How much of the start is trimmed in seconds
+  trimEnd: number; // How much of the end is trimmed in seconds
+  volume: number; // 0 to 1
+  fadeIn: number; // Fade in duration in seconds
+  fadeOut: number; // Fade out duration in seconds
+}
+
+/**
+ * Merge strategy options for AI-powered song merging
+ */
+export type MergeStrategy =
+  | "crossfade"
+  | "beat-match"
+  | "smooth-transition"
+  | "medley"
+  | "mashup"
+  | "custom";
+
+/**
+ * Configuration for AI song merging
+ */
+export interface MergeConfiguration {
+  strategy: MergeStrategy;
+  customInstructions?: string;
+  transitionDuration?: number; // in seconds
+  matchBPM?: boolean;
+  matchKey?: boolean;
+}
+
+/**
+ * Result from AI song merge analysis
+ */
+export interface MergeAnalysisResult {
+  suggestedTransitions: {
+    fromSegment: string; // segment id
+    toSegment: string; // segment id
+    transitionType: string;
+    transitionDuration: number;
+    reasoning: string;
+  }[];
+  tempoAdjustments: {
+    segmentId: string;
+    originalBPM: number;
+    targetBPM: number;
+  }[];
+  keyAdjustments: {
+    segmentId: string;
+    originalKey: string;
+    targetKey: string;
+    semitoneShift: number;
+  }[];
+  overallFlow: string; // Description of the merged song flow
+}
