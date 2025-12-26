@@ -12,7 +12,7 @@ import {
   SongData,
   StructureSection,
   AudioAnalysisResult,
-} from "../types";
+} from "./types";
 
 let ai: GoogleGenAI;
 
@@ -855,3 +855,9 @@ export const generateChatTitle = async (
     return `Conversation started...`;
   }
 };
+
+// --- Song Merger Services ---
+
+/**
+ * Analyze multiple audio segments and provide AI-powered merge recommendations
+ */
