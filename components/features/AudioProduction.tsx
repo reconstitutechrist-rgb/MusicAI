@@ -34,6 +34,8 @@ import {
   RecordingEnhancementResult,
 } from "../../types";
 import KaraokeMode from "./KaraokeMode";
+import TimelineEditor from "./TimelineEditor/TimelineEditor";
+import { LibrarySong } from "../../types/timeline";
 import AutomationLane, {
   getValueAtTime,
   denormalizeValue,
@@ -331,6 +333,9 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
   const [isKaraokeMode, setIsKaraokeMode] = useState(initialKaraokeMode);
   const [availableKaraokeSongs, setAvailableKaraokeSongs] =
     useState<KaraokeSong[]>(karaokeSongs);
+
+  // Timeline Editor (Song Merger) State
+  const [isTimelineEditorMode, setIsTimelineEditorMode] = useState(false);
   const [vocalAudioUrl, setVocalAudioUrl] = useState<string | null>(null);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [selectedVoice, setSelectedVoice] = useState("Kore");
@@ -2595,6 +2600,53 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
     setAvailableKaraokeSongs((prev) => [...prev, song]);
   }, []);
 
+  // Convert karaoke songs to library songs for timeline editor
+  const getLibrarySongs = useCallback((): LibrarySong[] => {
+    return availableKaraokeSongs.map((song) => ({
+      id: song.id,
+      title: song.songData.title,
+      style: song.songData.style,
+      audioUrl: song.instrumentalUrl,
+      duration: song.duration,
+      analysis: song.bpm && song.key
+        ? {
+            bpm: song.bpm.toString(),
+            key: song.key,
+            genre: song.songData.style,
+            chords: [],
+            productionFeedback: "",
+            mood: "Unknown",
+          }
+        : undefined,
+    }));
+  }, [availableKaraokeSongs]);
+
+  // Handle merged audio from timeline editor
+  const handleTimelineExport = useCallback((audioBlob: Blob, audioUrl: string) => {
+    setVocalAudioUrl(audioUrl);
+    setCurrentInstrumentalUrl(audioUrl);
+    setIsTimelineEditorMode(false);
+  }, []);
+
+  // Render Timeline Editor (Song Merger) Mode
+  if (isTimelineEditorMode) {
+    return (
+      <Page
+        title="Audio Production"
+        description="Song Merger - Combine songs into seamless medleys"
+      >
+        <div className="h-[calc(100vh-12rem)]">
+          <TimelineEditor
+            songs={getLibrarySongs()}
+            audioContext={audioContext}
+            onClose={() => setIsTimelineEditorMode(false)}
+            onExport={handleTimelineExport}
+          />
+        </div>
+      </Page>
+    );
+  }
+
   // Render Karaoke Mode
   if (isKaraokeMode) {
     return (
@@ -2682,6 +2734,14 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                   Studio Mixer
                 </h3>
                 <div className="flex items-center gap-2">
+                  {availableKaraokeSongs.length >= 2 && (
+                    <button
+                      onClick={() => setIsTimelineEditorMode(true)}
+                      className="text-xs px-3 py-1 rounded-full transition-colors bg-gradient-to-r from-purple-600/20 to-indigo-600/20 text-purple-400 border border-purple-500/50 hover:from-purple-600/30 hover:to-indigo-600/30 flex items-center gap-1"
+                    >
+                      <span>🎚️</span> Song Merger
+                    </button>
+                  )}
                   {availableKaraokeSongs.length > 0 && (
                     <button
                       onClick={() => setIsKaraokeMode(true)}
