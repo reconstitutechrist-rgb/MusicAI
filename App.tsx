@@ -14,6 +14,7 @@ import {
   LyricLabIcon,
   AnalyzerIcon,
   RemixIcon,
+  CommunityIcon,
 } from "./constants";
 import MusicCreation from "./components/features/MusicCreation";
 import AudioProduction from "./components/features/AudioProduction";
@@ -23,6 +24,8 @@ import AiAssistant from "./components/features/AiAssistant";
 import LyricLab from "./components/features/LyricLab";
 import AudioAnalyzer from "./components/features/AudioAnalyzer";
 import RemixStudio from "./components/features/RemixStudio";
+import Community from "./components/features/Community";
+import { AuthProvider } from "./context/AuthContext";
 import ToastContainer from "./components/ui/ToastContainer";
 import ThemeToggle from "./components/ui/ThemeToggle";
 import { useTheme, useMusicState } from "./context/AppContext";
@@ -43,7 +46,8 @@ type View =
   | "assist"
   | "lab"
   | "analyze"
-  | "remix";
+  | "remix"
+  | "community";
 
 const App: React.FC = () => {
   const { theme, setTheme } = useTheme();
@@ -87,6 +91,7 @@ const App: React.FC = () => {
       case "video":
       case "market":
       case "assist":
+      case "community":
         return "marketing";
       default:
         return "music";
@@ -186,6 +191,8 @@ const App: React.FC = () => {
         return <AudioAnalyzer />;
       case "remix":
         return <RemixStudio />;
+      case "community":
+        return <Community />;
       default:
         return (
           <MusicCreation
@@ -197,8 +204,9 @@ const App: React.FC = () => {
   };
 
   return (
-    <LiveRegionProvider>
-      <ErrorBoundary>
+    <AuthProvider>
+      <LiveRegionProvider>
+        <ErrorBoundary>
         <div
           className={`flex min-h-screen overflow-hidden ${
             theme === "dark"
@@ -337,6 +345,12 @@ const App: React.FC = () => {
                 active={activeView === "assist"}
                 onClick={() => setActiveView("assist")}
               />
+              <SidebarItem
+                icon={<CommunityIcon className="h-5 w-5" />}
+                text="Community"
+                active={activeView === "community"}
+                onClick={() => setActiveView("community")}
+              />
 
               {/* Theme Toggle at bottom */}
               <div className="mt-auto px-4 py-4 border-t border-gray-700/50">
@@ -369,8 +383,9 @@ const App: React.FC = () => {
             </div>
           </main>
         </div>
-      </ErrorBoundary>
-    </LiveRegionProvider>
+        </ErrorBoundary>
+      </LiveRegionProvider>
+    </AuthProvider>
   );
 };
 

@@ -24,6 +24,8 @@ import {
 } from "../../types";
 import { useLiveRegion } from "../ui/LiveRegion";
 import { useToastHelpers } from "../ui/Toast";
+import CreateShowcaseModal from "../community/CreateShowcaseModal";
+import { useAuth } from "../../context/AuthContext";
 
 // --- Audio Helper Functions ---
 
@@ -481,6 +483,10 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
     typeof window !== "undefined" ? window.innerWidth < 768 : false,
   );
   const [isPreparingKaraoke, setIsPreparingKaraoke] = useState(false);
+  const [showShowcaseModal, setShowShowcaseModal] = useState(false);
+
+  // Auth context for showcase
+  const { isAuthenticated, isConfigured: isAuthConfigured } = useAuth();
 
   // Refs
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -1346,7 +1352,37 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
             🎤 Send to Karaoke
           </Button>
         )}
+        {isAuthConfigured && latestAudioUrl && (
+          <Button
+            onClick={() => {
+              if (!isAuthenticated) {
+                toast.info("Please sign in to share to the community");
+                return;
+              }
+              setShowShowcaseModal(true);
+            }}
+            variant="secondary"
+            size="lg"
+            disabled={!latestSongData || !latestAudioUrl}
+            aria-label="Share to AI showcase"
+          >
+            ✨ Share to Community
+          </Button>
+        )}
       </div>
+
+      {/* Showcase Modal */}
+      <CreateShowcaseModal
+        isOpen={showShowcaseModal}
+        onClose={() => setShowShowcaseModal(false)}
+        onSuccess={() => {
+          toast.success("Track shared to community!");
+          setShowShowcaseModal(false);
+        }}
+        initialAudioUrl={latestAudioUrl}
+        initialTitle={latestSongData?.title}
+        initialLyrics={latestSongData?.lyrics}
+      />
     </Page>
   );
 };

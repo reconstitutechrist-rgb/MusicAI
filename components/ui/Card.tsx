@@ -5,6 +5,7 @@ interface CardProps {
   className?: string;
   variant?: "default" | "glass" | "gradient";
   hover?: boolean;
+  onClick?: () => void;
 }
 
 const Card: React.FC<CardProps> = ({
@@ -12,6 +13,7 @@ const Card: React.FC<CardProps> = ({
   className = "",
   variant = "default",
   hover = true,
+  onClick,
 }) => {
   const baseStyles = "rounded-2xl p-6 transition-all duration-300 ease-out";
 
@@ -25,9 +27,20 @@ const Card: React.FC<CardProps> = ({
 
   const hoverStyles = hover ? "hover-lift hover:border-indigo-500/30" : "";
 
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (onClick && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   return (
     <div
       className={`${baseStyles} ${variants[variant]} ${hoverStyles} ${className}`}
+      onClick={onClick}
+      onKeyDown={onClick ? handleKeyDown : undefined}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
     >
       {children}
     </div>
