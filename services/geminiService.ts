@@ -511,29 +511,6 @@ export const remixAudioTrack = async (
   );
 };
 
-export const masterAudio = async (
-  audioBase64: string,
-  mimeType: string,
-): Promise<string> => {
-  // This feature is not supported by current models. The UI will prevent this from being called.
-  // This function remains as a safeguard.
-  throw new Error(
-    "Audio Mastering is not supported by the available AI models.",
-  );
-};
-
-export const separateAudioStem = async (
-  audioBase64: string,
-  mimeType: string,
-  stemToExtract: "vocals" | "instrumental",
-): Promise<string> => {
-  // This feature is not supported by current models. The UI will prevent this from being called.
-  // This function remains as a safeguard.
-  throw new Error(
-    "Stem Separation is not supported by the available AI models.",
-  );
-};
-
 export const generateImage = async (
   prompt: string,
   aspectRatio: "1:1" | "16:9" | "9:16" | "4:3" | "3:4",

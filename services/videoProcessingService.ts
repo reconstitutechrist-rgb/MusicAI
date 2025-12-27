@@ -206,8 +206,10 @@ export const createLyricVideo = async (
 
   // Set up MediaRecorder to capture canvas
   const stream = canvas.captureStream(fps);
-  const audioStream = audio.captureStream
-    ? audio.captureStream()
+  // captureStream is available on HTMLMediaElement in browsers but not in TypeScript DOM types
+  const captureStream = (audio as HTMLAudioElement & { captureStream?: () => MediaStream }).captureStream;
+  const audioStream = captureStream
+    ? captureStream.call(audio)
     : new MediaStream();
   if (audioStream.getAudioTracks().length > 0) {
     stream.addTrack(audioStream.getAudioTracks()[0]);

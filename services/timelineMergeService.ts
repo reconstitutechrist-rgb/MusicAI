@@ -1,471 +1,686 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import {
-  MergeAnalysisResponse,
-  LibrarySong,
-  TimelineClip,
-  CrossfadeRegion,
-  MergePlan,
-  MergeSuggestion,
-} from "../types/timeline";
-import { AudioAnalysisResult } from "../types";
-
-let ai: GoogleGenAI;
-
-// Get API key from environment
-const getApiKey = (): string => {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey || typeof apiKey !== "string") {
-    throw new Error(
-      "VITE_GEMINI_API_KEY environment variable not set. Please add it to your .env file.",
-    );
-  }
-  return apiKey;
-};
-
-// Safe JSON parse helper
-const safeJsonParse = <T>(text: string, errorContext: string): T => {
-  try {
-    return JSON.parse(text) as T;
-  } catch (error) {
-    const parseError =
-      error instanceof Error ? error.message : "Unknown parse error";
-    throw new Error(
-      `Failed to parse AI response for ${errorContext}: ${parseError}. Response text: ${text.substring(0, 200)}...`,
-    );
-  }
-};
-
-const getAi = () => {
-  if (!ai) {
-    ai = new GoogleGenAI({ apiKey: getApiKey() });
-  }
-  return ai;
-};
-
-// Timeout wrapper for API calls
-const generateWithTimeout = async <T>(
-  promise: Promise<T>,
-  timeoutMs: number = 90000,
-): Promise<T> => {
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(
-      () => reject(new Error("Request timed out. Please try again.")),
-      timeoutMs,
-    ),
-  );
-  return Promise.race([promise, timeout]);
-};
+import { CrossfadeCurveType, TimelineClip, CrossfadeRegion, MergeSuggestion, LibrarySong } from "../types/timeline";
+import { renderCrossfadeOffline, generateCrossfadeCurve } from "../utils/crossfadeAlgorithms";
 
 /**
- * Analyzes multiple songs for merge compatibility
- * Returns compatibility score, recommended order, and crossfade suggestions
+ * Auto-merge plan result
  */
-export async function analyzeSongsForMerge(
-  songs: Array<{
-    id: string;
-    title: string;
-    style: string;
-    analysis: AudioAnalysisResult | null;
-  }>,
-  userDescription: string,
-): Promise<MergeAnalysisResponse> {
-  const ai = getAi();
-
-  const responseSchema = {
-    type: Type.OBJECT,
-    properties: {
-      compatibility: {
-        type: Type.OBJECT,
-        properties: {
-          score: {
-            type: Type.NUMBER,
-            description: "Overall compatibility score from 0-100",
-          },
-          keyCompatibility: {
-            type: Type.STRING,
-            description: "Description of key relationship",
-          },
-          bpmDifference: {
-            type: Type.NUMBER,
-            description: "Average BPM difference between songs",
-          },
-          recommendedOrder: {
-            type: Type.ARRAY,
-            items: { type: Type.STRING },
-            description: "Recommended playback order (array of song IDs)",
-          },
-        },
-        required: [
-          "score",
-          "keyCompatibility",
-          "bpmDifference",
-          "recommendedOrder",
-        ],
-      },
-      suggestedCrossfades: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            fromSongId: { type: Type.STRING },
-            toSongId: { type: Type.STRING },
-            recommendedDuration: {
-              type: Type.NUMBER,
-              description: "Crossfade duration in seconds (2-8)",
-            },
-            transitionType: {
-              type: Type.STRING,
-              description:
-                "Type of transition: smooth, energetic, dramatic, subtle",
-            },
-            reasoning: {
-              type: Type.STRING,
-              description: "Brief explanation for this transition",
-            },
-          },
-          required: [
-            "fromSongId",
-            "toSongId",
-            "recommendedDuration",
-            "transitionType",
-          ],
-        },
-      },
-      transitionPrompts: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            clipAId: { type: Type.STRING },
-            clipBId: { type: Type.STRING },
-            prompt: {
-              type: Type.STRING,
-              description:
-                "Detailed prompt for generating AI transition audio between the songs",
-            },
-          },
-          required: ["clipAId", "clipBId", "prompt"],
-        },
-      },
-    },
-    required: ["compatibility", "suggestedCrossfades", "transitionPrompts"],
+interface AutoMergePlan {
+  orderedSongIds: string[];
+  crossfadeDurations: number[];
+  compatibility: {
+    score: number;
+    keyCompatibility: string;
+    bpmDifference: number;
   };
-
-  const songDescriptions = songs
-    .map((song, i) => {
-      const analysis = song.analysis;
-      return `Song ${i + 1}: "${song.title}"
-- Style: ${song.style}
-- BPM: ${analysis?.bpm || "Unknown"}
-- Key: ${analysis?.key || "Unknown"}
-- Genre: ${analysis?.genre || "Unknown"}
-- Mood: ${analysis?.mood || "Unknown"}
-- ID: ${song.id}`;
-    })
-    .join("\n\n");
-
-  const prompt = `You are an expert DJ and music producer. Analyze these ${songs.length} songs for creating a seamless medley mix.
-
-User's desired outcome: "${userDescription || "Create a smooth, professional medley"}"
-
-Songs to merge:
-${songDescriptions}
-
-Analyze the songs and provide:
-1. Overall compatibility score (0-100) based on key compatibility, tempo similarity, and mood alignment
-2. Key compatibility analysis (e.g., "Compatible - relative minor", "Challenging - distant keys")
-3. Average BPM difference between consecutive songs
-4. Recommended playback order for the best musical flow
-5. For each transition between songs:
-   - Recommended crossfade duration (2-8 seconds based on tempo and energy)
-   - Transition type (smooth, energetic, dramatic, subtle)
-   - Brief reasoning
-6. For each transition, provide a detailed audio generation prompt that describes what instrumental bridge should be generated. Include:
-   - The tempo and feel
-   - Musical elements (drums, bass, synths, etc.)
-   - How it should connect the outgoing and incoming songs
-   - Duration and energy arc`;
-
-  try {
-    const result = await generateWithTimeout(
-      ai.models.generateContent({
-        model: "gemini-3-pro-preview",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema,
-        },
-      }),
-      90000,
-    );
-
-    const text = result.text?.trim();
-    if (!text) {
-      throw new Error("Empty response from AI");
-    }
-
-    return safeJsonParse<MergeAnalysisResponse>(text, "merge analysis");
-  } catch (error) {
-    console.error("Failed to analyze songs for merge:", error);
-    throw error;
-  }
 }
 
 /**
- * Generate suggestions based on current timeline state
+ * Generate merge suggestions based on clip analysis
+ * Analyzes BPM, key, and structure to provide optimization recommendations
  */
 export async function generateMergeSuggestions(
   clips: TimelineClip[],
-  crossfades: CrossfadeRegion[],
+  crossfades: CrossfadeRegion[]
 ): Promise<MergeSuggestion[]> {
-  if (clips.length < 2) return [];
+  const suggestions: MergeSuggestion[] = [];
 
-  const ai = getAi();
-
-  const responseSchema = {
-    type: Type.OBJECT,
-    properties: {
-      suggestions: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            type: {
-              type: Type.STRING,
-              description: "reorder, crossfade, trim, key-match, bpm-match",
-            },
-            description: { type: Type.STRING },
-            confidence: { type: Type.NUMBER, description: "0-100" },
-            clipIds: { type: Type.ARRAY, items: { type: Type.STRING } },
-            suggestedValue: {
-              type: Type.STRING,
-              description: "Optional suggested value",
-            },
-          },
-          required: ["type", "description", "confidence", "clipIds"],
-        },
-      },
-    },
-    required: ["suggestions"],
-  };
-
-  const clipsDescription = clips
-    .map((clip, i) => {
-      return `Clip ${i + 1}: "${clip.songTitle}" at ${clip.startTime.toFixed(1)}s
-- Duration: ${(clip.duration - clip.trimStart - clip.trimEnd).toFixed(1)}s
-- BPM: ${clip.analysis?.bpm || "Unknown"}, Key: ${clip.analysis?.key || "Unknown"}
-- ID: ${clip.id}`;
-    })
-    .join("\n");
-
-  const crossfadesDescription = crossfades
-    .map((cf, i) => {
-      return `Crossfade ${i + 1}: ${cf.duration.toFixed(1)}s, Curve: ${cf.curveType}`;
-    })
-    .join("\n");
-
-  const prompt = `Analyze this medley timeline and suggest improvements:
-
-Current Clips:
-${clipsDescription}
-
-Current Crossfades:
-${crossfadesDescription}
-
-Provide suggestions for:
-1. Better song ordering for improved flow
-2. Optimal crossfade durations based on tempo and energy
-3. Trim suggestions to start/end at better points (e.g., after intros, before outros)
-4. Key matching opportunities (transposing)
-5. BPM matching opportunities (time-stretching)
-
-Only suggest changes that would significantly improve the mix. Be specific about which clips are affected.`;
-
-  try {
-    const result = await generateWithTimeout(
-      ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema,
-        },
-      }),
-      60000,
-    );
-
-    const text = result.text?.trim();
-    if (!text) return [];
-
-    const parsed = safeJsonParse<{ suggestions: MergeSuggestion[] }>(
-      text,
-      "suggestions",
-    );
-    return parsed.suggestions.map((s, i) => ({
-      ...s,
-      id: `suggestion-${Date.now()}-${i}`,
-    }));
-  } catch (error) {
-    console.error("Failed to generate suggestions:", error);
-    return [];
+  if (clips.length < 2) {
+    return suggestions;
   }
+
+  // Sort clips by start time
+  const sortedClips = [...clips].sort((a, b) => a.startTime - b.startTime);
+
+  // Analyze BPM compatibility
+  const bpmValues = sortedClips
+    .map(c => c.analysis?.bpm)
+    .filter((bpm): bpm is number => bpm !== undefined && bpm !== null);
+
+  if (bpmValues.length >= 2) {
+    const avgBpm = bpmValues.reduce((a, b) => a + b, 0) / bpmValues.length;
+    const maxBpmDiff = Math.max(...bpmValues.map(bpm => Math.abs(bpm - avgBpm)));
+
+    if (maxBpmDiff > 15) {
+      // Find clips with significantly different BPM
+      const outlierClips = sortedClips.filter(c => {
+        const bpm = c.analysis?.bpm;
+        return bpm && Math.abs(bpm - avgBpm) > 15;
+      });
+
+      if (outlierClips.length > 0) {
+        suggestions.push({
+          id: `bpm-match-${Date.now()}`,
+          type: "bpm-match",
+          description: `Consider reordering clips to minimize BPM jumps. ${outlierClips[0].songTitle} (${outlierClips[0].analysis?.bpm} BPM) differs significantly from the average (${Math.round(avgBpm)} BPM).`,
+          confidence: Math.min(90, 50 + maxBpmDiff),
+          clipIds: outlierClips.map(c => c.id),
+          suggestedValue: avgBpm,
+        });
+      }
+    }
+  }
+
+  // Analyze key compatibility
+  const keys = sortedClips
+    .map(c => c.analysis?.key)
+    .filter((key): key is string => key !== undefined && key !== null);
+
+  if (keys.length >= 2) {
+    // Check for compatible keys (same key or relative major/minor)
+    const keyGroups = groupByCompatibleKeys(keys);
+    if (keyGroups.length > 1) {
+      suggestions.push({
+        id: `key-match-${Date.now()}`,
+        type: "key-match",
+        description: "Clips have varying keys. Consider reordering to group compatible keys together for smoother transitions.",
+        confidence: 70,
+        clipIds: sortedClips.map(c => c.id),
+      });
+    }
+  }
+
+  // Analyze crossfade durations
+  for (const crossfade of crossfades) {
+    const clipA = sortedClips.find(c => c.id === crossfade.clipAId);
+    const clipB = sortedClips.find(c => c.id === crossfade.clipBId);
+
+    if (clipA?.analysis?.bpm && clipB?.analysis?.bpm) {
+      const bpmDiff = Math.abs(clipA.analysis.bpm - clipB.analysis.bpm);
+      const suggestedDuration = await suggestCrossfadeDuration(clipA, clipB);
+
+      if (Math.abs(crossfade.duration - suggestedDuration) > 1) {
+        suggestions.push({
+          id: `crossfade-${crossfade.id}-${Date.now()}`,
+          type: "crossfade",
+          description: `Crossfade between "${clipA.songTitle}" and "${clipB.songTitle}" could be adjusted. Suggested: ${suggestedDuration.toFixed(1)}s based on BPM analysis.`,
+          confidence: 60 + Math.min(20, bpmDiff),
+          clipIds: [clipA.id, clipB.id],
+          suggestedValue: suggestedDuration,
+        });
+      }
+    }
+  }
+
+  // Sort by confidence
+  return suggestions.sort((a, b) => b.confidence - a.confidence);
 }
 
 /**
- * Generate a complete auto-merge plan from a user description
+ * Group keys by compatibility (same key family)
+ */
+function groupByCompatibleKeys(keys: string[]): string[][] {
+  const keyFamilies: Record<string, string[]> = {};
+
+  for (const key of keys) {
+    // Normalize key (e.g., "C major" -> "C", "A minor" -> "Am")
+    const normalized = normalizeKey(key);
+    const family = getKeyFamily(normalized);
+
+    if (!keyFamilies[family]) {
+      keyFamilies[family] = [];
+    }
+    keyFamilies[family].push(key);
+  }
+
+  return Object.values(keyFamilies);
+}
+
+/**
+ * Normalize a key string
+ */
+function normalizeKey(key: string): string {
+  return key.replace(/\s*(major|minor|maj|min)/gi, match =>
+    match.toLowerCase().includes("min") ? "m" : ""
+  ).trim();
+}
+
+/**
+ * Get the key family (circle of fifths proximity)
+ */
+function getKeyFamily(key: string): string {
+  // Simplified key family mapping
+  const families: Record<string, string> = {
+    "C": "C", "Am": "C", "G": "C", "Em": "C",
+    "D": "D", "Bm": "D", "A": "D", "F#m": "D",
+    "E": "E", "C#m": "E", "B": "E", "G#m": "E",
+    "F": "F", "Dm": "F", "Bb": "F", "Gm": "F",
+  };
+  return families[key] || key;
+}
+
+/**
+ * Helper to parse BPM from string or number
+ */
+function parseBpm(bpm: string | number | undefined): number | undefined {
+  if (bpm === undefined || bpm === null) return undefined;
+  if (typeof bpm === "number") return bpm;
+  const parsed = parseFloat(bpm);
+  return isNaN(parsed) ? undefined : parsed;
+}
+
+/**
+ * Generate an automatic merge plan based on song analysis
+ * Orders songs and calculates optimal crossfade durations
  */
 export async function generateAutoMergePlan(
   songs: LibrarySong[],
-  userDescription: string,
-): Promise<{
-  orderedSongIds: string[];
-  crossfadeDurations: number[];
-  transitionPrompts: string[];
-}> {
-  if (songs.length < 2) {
+  _description: string
+): Promise<AutoMergePlan> {
+  if (songs.length === 0) {
     return {
-      orderedSongIds: songs.map((s) => s.id),
+      orderedSongIds: [],
       crossfadeDurations: [],
-      transitionPrompts: [],
+      compatibility: {
+        score: 100,
+        keyCompatibility: "N/A",
+        bpmDifference: 0,
+      },
     };
   }
 
-  // First, analyze all songs for merge compatibility
-  const analysis = await analyzeSongsForMerge(
-    songs.map((s) => ({
-      id: s.id,
-      title: s.title,
-      style: s.style,
-      analysis: s.analysis || null,
-    })),
-    userDescription,
-  );
+  if (songs.length === 1) {
+    return {
+      orderedSongIds: [songs[0].id],
+      crossfadeDurations: [],
+      compatibility: {
+        score: 100,
+        keyCompatibility: "N/A",
+        bpmDifference: 0,
+      },
+    };
+  }
 
-  // Extract ordered song IDs from analysis
-  const orderedSongIds =
-    analysis.compatibility.recommendedOrder.length === songs.length
-      ? analysis.compatibility.recommendedOrder
-      : songs.map((s) => s.id);
+  // Sort songs by BPM for smooth transitions
+  const songsWithBpm = songs.filter(s => parseBpm(s.analysis?.bpm) !== undefined);
+  const songsWithoutBpm = songs.filter(s => parseBpm(s.analysis?.bpm) === undefined);
 
-  // Extract crossfade durations for each transition
-  const crossfadeDurations = analysis.suggestedCrossfades.map(
-    (cf) => cf.recommendedDuration,
-  );
+  // Sort by BPM (ascending)
+  songsWithBpm.sort((a, b) => (parseBpm(a.analysis?.bpm) || 0) - (parseBpm(b.analysis?.bpm) || 0));
 
-  // Extract transition prompts
-  const transitionPrompts = analysis.transitionPrompts.map((tp) => tp.prompt);
+  // Combine: songs with BPM first, then those without
+  const orderedSongs = [...songsWithBpm, ...songsWithoutBpm];
+  const orderedSongIds = orderedSongs.map(s => s.id);
+
+  // Calculate crossfade durations based on BPM differences
+  const crossfadeDurations: number[] = [];
+  for (let i = 0; i < orderedSongs.length - 1; i++) {
+    const currentBpm = parseBpm(orderedSongs[i].analysis?.bpm) || 120;
+    const nextBpm = parseBpm(orderedSongs[i + 1].analysis?.bpm) || 120;
+    const bpmDiff = Math.abs(currentBpm - nextBpm);
+
+    // Longer crossfades for bigger BPM differences
+    let duration = 4; // default
+    if (bpmDiff < 5) {
+      duration = 3; // Quick transition for similar BPMs
+    } else if (bpmDiff < 15) {
+      duration = 4; // Standard transition
+    } else if (bpmDiff < 30) {
+      duration = 5; // Longer transition
+    } else {
+      duration = 6; // Extended transition for large BPM jumps
+    }
+
+    crossfadeDurations.push(duration);
+  }
+
+  // Calculate compatibility score
+  const bpmValues = orderedSongs
+    .map(s => parseBpm(s.analysis?.bpm))
+    .filter((bpm): bpm is number => bpm !== undefined);
+
+  const bpmDifference = bpmValues.length >= 2
+    ? Math.max(...bpmValues) - Math.min(...bpmValues)
+    : 0;
+
+  const keys = orderedSongs
+    .map(s => s.analysis?.key)
+    .filter((key): key is string => key !== undefined);
+
+  const keyGroups = groupByCompatibleKeys(keys);
+  const keyCompatibility = keyGroups.length === 1
+    ? "Excellent"
+    : keyGroups.length === 2
+    ? "Good"
+    : "Mixed";
+
+  // Score based on BPM range and key compatibility
+  let score = 100;
+  score -= Math.min(30, bpmDifference / 2);
+  score -= (keyGroups.length - 1) * 10;
 
   return {
     orderedSongIds,
     crossfadeDurations,
-    transitionPrompts,
+    compatibility: {
+      score: Math.max(0, Math.round(score)),
+      keyCompatibility,
+      bpmDifference: Math.round(bpmDifference),
+    },
   };
 }
 
 /**
- * Generate transition audio prompt for a specific crossfade
+ * Service for audio transition processing in the Timeline Editor
+ * Handles crossfade generation, audio merging, and transition effects
  */
-export function generateTransitionPrompt(
+
+/**
+ * Generate transition audio for a crossfade region between two clips
+ * Uses Web Audio API offline rendering for the crossfade
+ */
+export async function generateTransitionAudio(
+  crossfade: CrossfadeRegion,
+  clips: TimelineClip[],
+  onProgress?: (progress: number) => void
+): Promise<AudioBuffer | null> {
+  const clipA = clips.find(c => c.id === crossfade.clipAId);
+  const clipB = clips.find(c => c.id === crossfade.clipBId);
+
+  if (!clipA?.audioBuffer || !clipB?.audioBuffer) {
+    console.warn("Cannot generate transition: missing audio buffers");
+    return null;
+  }
+
+  onProgress?.(10);
+
+  try {
+    // Extract the overlapping portions of each clip
+    const sampleRate = clipA.audioBuffer.sampleRate;
+
+    // Calculate where clip B starts relative to clip A
+    const clipAEnd = clipA.startTime + clipA.duration - clipA.trimEnd;
+    const crossfadeStart = clipB.startTime;
+    const overlapDuration = Math.min(
+      crossfade.duration,
+      clipAEnd - crossfadeStart
+    );
+
+    if (overlapDuration <= 0) {
+      console.warn("No overlap between clips for crossfade");
+      return null;
+    }
+
+    onProgress?.(30);
+
+    // Extract the relevant portion from clip A (end section)
+    const clipAOverlapStart = clipA.duration - clipA.trimEnd - overlapDuration;
+    const clipABuffer = extractBufferSection(
+      clipA.audioBuffer,
+      Math.max(0, clipAOverlapStart),
+      overlapDuration,
+      sampleRate
+    );
+
+    onProgress?.(50);
+
+    // Extract the relevant portion from clip B (beginning section)
+    const clipBBuffer = extractBufferSection(
+      clipB.audioBuffer,
+      clipB.trimStart,
+      overlapDuration,
+      sampleRate
+    );
+
+    onProgress?.(70);
+
+    // Render the crossfade
+    const transitionBuffer = await renderCrossfadeOffline(
+      clipABuffer,
+      clipBBuffer,
+      overlapDuration,
+      crossfade.curveType,
+      sampleRate
+    );
+
+    onProgress?.(100);
+
+    return transitionBuffer;
+  } catch (error) {
+    console.error("Error generating transition audio:", error);
+    return null;
+  }
+}
+
+/**
+ * Extract a section of an AudioBuffer
+ */
+function extractBufferSection(
+  buffer: AudioBuffer,
+  startTime: number,
+  duration: number,
+  sampleRate: number
+): AudioBuffer {
+  const startSample = Math.floor(startTime * sampleRate);
+  const numSamples = Math.floor(duration * sampleRate);
+  const numChannels = buffer.numberOfChannels;
+
+  // Create offline context to create the new buffer
+  const offlineCtx = new OfflineAudioContext(
+    numChannels,
+    numSamples,
+    sampleRate
+  );
+  const newBuffer = offlineCtx.createBuffer(numChannels, numSamples, sampleRate);
+
+  for (let channel = 0; channel < numChannels; channel++) {
+    const sourceData = buffer.getChannelData(channel);
+    const destData = newBuffer.getChannelData(channel);
+
+    for (let i = 0; i < numSamples; i++) {
+      const sourceIndex = startSample + i;
+      if (sourceIndex < sourceData.length) {
+        destData[i] = sourceData[sourceIndex];
+      }
+    }
+  }
+
+  return newBuffer;
+}
+
+/**
+ * Merge all clips into a single audio buffer with crossfades applied
+ */
+export async function mergeClipsWithCrossfades(
+  clips: TimelineClip[],
+  crossfades: CrossfadeRegion[],
+  onProgress?: (status: string, progress: number) => void
+): Promise<AudioBuffer | null> {
+  if (clips.length === 0) {
+    return null;
+  }
+
+  // Sort clips by start time
+  const sortedClips = [...clips].sort((a, b) => a.startTime - b.startTime);
+
+  // Calculate total duration
+  const lastClip = sortedClips[sortedClips.length - 1];
+  const totalDuration = lastClip.startTime + lastClip.duration - lastClip.trimEnd;
+
+  if (totalDuration <= 0) {
+    return null;
+  }
+
+  // Use the sample rate from the first clip
+  const sampleRate = sortedClips[0].audioBuffer?.sampleRate || 44100;
+  const numSamples = Math.ceil(totalDuration * sampleRate);
+
+  onProgress?.("Creating output buffer...", 5);
+
+  // Create output buffer (stereo)
+  const offlineCtx = new OfflineAudioContext(2, numSamples, sampleRate);
+  const outputBuffer = offlineCtx.createBuffer(2, numSamples, sampleRate);
+
+  // Process each clip
+  for (let i = 0; i < sortedClips.length; i++) {
+    const clip = sortedClips[i];
+
+    if (!clip.audioBuffer) {
+      continue;
+    }
+
+    onProgress?.(`Processing clip ${i + 1}/${sortedClips.length}...`,
+      10 + (i / sortedClips.length) * 70);
+
+    const clipStartSample = Math.floor(clip.startTime * sampleRate);
+    const trimStartSample = Math.floor(clip.trimStart * sampleRate);
+
+    // Find crossfades involving this clip
+    const crossfadeIn = crossfades.find(cf => cf.clipBId === clip.id);
+    const crossfadeOut = crossfades.find(cf => cf.clipAId === clip.id);
+
+    // Generate gain envelope for this clip
+    const clipDuration = clip.duration - clip.trimStart - clip.trimEnd;
+    const clipNumSamples = Math.floor(clipDuration * sampleRate);
+    const gainEnvelope = new Float32Array(clipNumSamples);
+    gainEnvelope.fill(clip.volume);
+
+    // Apply crossfade in (if exists)
+    if (crossfadeIn) {
+      const fadeInSamples = Math.floor(crossfadeIn.duration * sampleRate);
+      const { curveB } = generateCrossfadeCurve(crossfadeIn.curveType, fadeInSamples);
+      for (let j = 0; j < Math.min(fadeInSamples, clipNumSamples); j++) {
+        gainEnvelope[j] *= curveB[j] || 0;
+      }
+    }
+
+    // Apply crossfade out (if exists)
+    if (crossfadeOut) {
+      const fadeOutSamples = Math.floor(crossfadeOut.duration * sampleRate);
+      const { curveA } = generateCrossfadeCurve(crossfadeOut.curveType, fadeOutSamples);
+      const startOffset = clipNumSamples - fadeOutSamples;
+      for (let j = 0; j < fadeOutSamples && startOffset + j < clipNumSamples; j++) {
+        gainEnvelope[startOffset + j] *= curveA[j] || 0;
+      }
+    }
+
+    // Mix clip into output buffer
+    for (let channel = 0; channel < Math.min(2, clip.audioBuffer.numberOfChannels); channel++) {
+      const sourceData = clip.audioBuffer.getChannelData(channel);
+      const destData = outputBuffer.getChannelData(channel);
+
+      for (let j = 0; j < clipNumSamples; j++) {
+        const sourceIndex = trimStartSample + j;
+        const destIndex = clipStartSample + j;
+
+        if (sourceIndex < sourceData.length &&
+            destIndex >= 0 && destIndex < destData.length) {
+          // Apply gain and mix (add to existing audio for overlaps)
+          destData[destIndex] += sourceData[sourceIndex] * gainEnvelope[j];
+        }
+      }
+    }
+  }
+
+  onProgress?.("Normalizing audio...", 85);
+
+  // Normalize to prevent clipping
+  normalizeBuffer(outputBuffer);
+
+  onProgress?.("Complete!", 100);
+
+  return outputBuffer;
+}
+
+/**
+ * Normalize an AudioBuffer to prevent clipping
+ */
+function normalizeBuffer(buffer: AudioBuffer, targetPeak: number = 0.95): void {
+  let maxSample = 0;
+
+  // Find the maximum absolute sample value
+  for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+    const data = buffer.getChannelData(channel);
+    for (let i = 0; i < data.length; i++) {
+      maxSample = Math.max(maxSample, Math.abs(data[i]));
+    }
+  }
+
+  // Apply normalization if needed
+  if (maxSample > targetPeak) {
+    const gain = targetPeak / maxSample;
+    for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+      const data = buffer.getChannelData(channel);
+      for (let i = 0; i < data.length; i++) {
+        data[i] *= gain;
+      }
+    }
+  }
+}
+
+/**
+ * Preview a crossfade by rendering just the transition section
+ */
+export async function previewCrossfade(
+  crossfade: CrossfadeRegion,
+  clips: TimelineClip[],
+  contextTime: number = 2 // seconds of context before and after
+): Promise<AudioBuffer | null> {
+  const clipA = clips.find(c => c.id === crossfade.clipAId);
+  const clipB = clips.find(c => c.id === crossfade.clipBId);
+
+  if (!clipA?.audioBuffer || !clipB?.audioBuffer) {
+    return null;
+  }
+
+  const sampleRate = clipA.audioBuffer.sampleRate;
+  const totalDuration = crossfade.duration + (contextTime * 2);
+
+  // Create preview buffer
+  const offlineCtx = new OfflineAudioContext(
+    2,
+    Math.ceil(totalDuration * sampleRate),
+    sampleRate
+  );
+
+  // Extract clip A end section (context + crossfade portion)
+  const clipAExtractDuration = contextTime + crossfade.duration;
+  const clipAStartOffset = Math.max(0,
+    clipA.duration - clipA.trimEnd - clipAExtractDuration
+  );
+  const clipABuffer = extractBufferSection(
+    clipA.audioBuffer,
+    clipAStartOffset,
+    clipAExtractDuration,
+    sampleRate
+  );
+
+  // Extract clip B start section (crossfade + context portion)
+  const clipBExtractDuration = crossfade.duration + contextTime;
+  const clipBBuffer = extractBufferSection(
+    clipB.audioBuffer,
+    clipB.trimStart,
+    clipBExtractDuration,
+    sampleRate
+  );
+
+  // Render with crossfade
+  return renderCrossfadeOffline(
+    clipABuffer,
+    clipBBuffer,
+    crossfade.duration,
+    crossfade.curveType,
+    sampleRate
+  );
+}
+
+/**
+ * Convert an AudioBuffer to a Blob for download
+ */
+export function audioBufferToBlob(
+  buffer: AudioBuffer,
+  format: "wav" | "mp3" = "wav"
+): Blob {
+  if (format === "wav") {
+    return audioBufferToWav(buffer);
+  }
+  // For MP3, we'd need an encoder library
+  // Fall back to WAV for now
+  return audioBufferToWav(buffer);
+}
+
+/**
+ * Convert AudioBuffer to WAV Blob
+ */
+function audioBufferToWav(buffer: AudioBuffer): Blob {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const format = 1; // PCM
+  const bitDepth = 16;
+
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numChannels * bytesPerSample;
+  const dataLength = buffer.length * numChannels * bytesPerSample;
+  const headerLength = 44;
+  const totalLength = headerLength + dataLength;
+
+  const arrayBuffer = new ArrayBuffer(totalLength);
+  const view = new DataView(arrayBuffer);
+
+  // WAV header
+  writeString(view, 0, "RIFF");
+  view.setUint32(4, totalLength - 8, true);
+  writeString(view, 8, "WAVE");
+  writeString(view, 12, "fmt ");
+  view.setUint32(16, 16, true); // fmt chunk size
+  view.setUint16(20, format, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitDepth, true);
+  writeString(view, 36, "data");
+  view.setUint32(40, dataLength, true);
+
+  // Interleave channels and write audio data
+  const offset = 44;
+  const channels: Float32Array[] = [];
+  for (let i = 0; i < numChannels; i++) {
+    channels.push(buffer.getChannelData(i));
+  }
+
+  let index = 0;
+  for (let i = 0; i < buffer.length; i++) {
+    for (let channel = 0; channel < numChannels; channel++) {
+      const sample = Math.max(-1, Math.min(1, channels[channel][i]));
+      const intSample = sample < 0
+        ? sample * 0x8000
+        : sample * 0x7FFF;
+      view.setInt16(offset + index, intSample, true);
+      index += 2;
+    }
+  }
+
+  return new Blob([arrayBuffer], { type: "audio/wav" });
+}
+
+function writeString(view: DataView, offset: number, string: string): void {
+  for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+}
+
+/**
+ * Analyze optimal crossfade duration based on audio content
+ */
+export async function suggestCrossfadeDuration(
   clipA: TimelineClip,
-  clipB: TimelineClip,
-  crossfadeDuration: number,
-): string {
+  clipB: TimelineClip
+): Promise<number> {
+  // Default suggestion based on BPM matching
   const bpmA = clipA.analysis?.bpm || 120;
   const bpmB = clipB.analysis?.bpm || 120;
   const avgBpm = (bpmA + bpmB) / 2;
 
-  const keyA = clipA.analysis?.key || "C";
-  const keyB = clipB.analysis?.key || "C";
+  // Shorter crossfades for faster tempos, longer for slower
+  // Base: 4 seconds at 120 BPM
+  const baseDuration = 4;
+  const bpmFactor = 120 / avgBpm;
 
-  const moodA = clipA.analysis?.mood || "energetic";
-  const moodB = clipB.analysis?.mood || "energetic";
-
-  return `Create a ${crossfadeDuration.toFixed(1)} second musical transition bridge.
-
-Outgoing song: "${clipA.songTitle}"
-- Tempo: ${bpmA} BPM
-- Key: ${keyA}
-- Mood: ${moodA}
-
-Incoming song: "${clipB.songTitle}"
-- Tempo: ${bpmB} BPM
-- Key: ${keyB}
-- Mood: ${moodB}
-
-Generate an instrumental transition that:
-1. Starts at approximately ${bpmA} BPM and smoothly transitions to ${bpmB} BPM
-2. Bridges the key change from ${keyA} to ${keyB}
-3. Uses drum fills, risers, or sweeps appropriate for the genres
-4. Creates a natural energy arc from ${moodA} to ${moodB}
-5. Includes tension-building elements like filter sweeps or impacts
-6. Duration: exactly ${crossfadeDuration.toFixed(1)} seconds at ~${avgBpm.toFixed(0)} average BPM
-
-The transition should feel like a professional DJ mix, maintaining the groove while smoothly introducing the next song.`;
+  // Clamp between 2 and 8 seconds
+  return Math.max(2, Math.min(8, baseDuration * bpmFactor));
 }
 
 /**
- * Estimate compatibility between two songs based on their analysis
- * Quick local calculation without API call
+ * Recommend crossfade curve type based on clip characteristics
  */
-export function estimateCompatibility(
-  analysisA: AudioAnalysisResult | null,
-  analysisB: AudioAnalysisResult | null,
-): {
-  score: number;
-  bpmCompatibility: string;
-  keyCompatibility: string;
-} {
-  if (!analysisA || !analysisB) {
-    return {
-      score: 50,
-      bpmCompatibility: "Unknown",
-      keyCompatibility: "Unknown",
-    };
-  }
-
-  const bpmA = parseFloat(analysisA.bpm) || 120;
-  const bpmB = parseFloat(analysisB.bpm) || 120;
+export function suggestCrossfadeCurve(
+  clipA: TimelineClip,
+  clipB: TimelineClip
+): CrossfadeCurveType {
+  const bpmA = clipA.analysis?.bpm || 120;
+  const bpmB = clipB.analysis?.bpm || 120;
   const bpmDiff = Math.abs(bpmA - bpmB);
 
-  // BPM compatibility (within 10 BPM is good, 20 is okay, beyond is challenging)
-  let bpmScore = 100;
-  let bpmCompatibility = "Excellent";
-  if (bpmDiff > 20) {
-    bpmScore = 40;
-    bpmCompatibility = "Challenging - significant tempo difference";
-  } else if (bpmDiff > 10) {
-    bpmScore = 70;
-    bpmCompatibility = "Good - moderate tempo adjustment needed";
-  } else if (bpmDiff > 5) {
-    bpmScore = 90;
-    bpmCompatibility = "Very good - minor tempo difference";
+  // For similar tempos, use equal power for smooth transition
+  if (bpmDiff < 5) {
+    return "equalPower";
   }
 
-  // Key compatibility (simplified)
-  const keyA = analysisA.key?.toUpperCase() || "C";
-  const keyB = analysisB.key?.toUpperCase() || "C";
-
-  let keyScore = 70;
-  let keyCompatibility = "Moderate";
-
-  if (keyA === keyB) {
-    keyScore = 100;
-    keyCompatibility = "Perfect - same key";
-  } else if (
-    // Relative major/minor (simplified)
-    (keyA.includes("M") && keyB.includes("m")) ||
-    (keyA.includes("m") && keyB.includes("M"))
-  ) {
-    keyScore = 90;
-    keyCompatibility = "Excellent - relative major/minor";
+  // For moderate differences, use S-curve for natural feel
+  if (bpmDiff < 15) {
+    return "sCurve";
   }
 
-  // Overall score weighted average
-  const score = Math.round(bpmScore * 0.6 + keyScore * 0.4);
-
-  return {
-    score,
-    bpmCompatibility,
-    keyCompatibility,
-  };
+  // For large differences, use linear for more noticeable transition
+  return "linear";
 }

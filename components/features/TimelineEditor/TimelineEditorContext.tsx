@@ -20,6 +20,7 @@ import {
 import {
   generateMergeSuggestions,
   generateAutoMergePlan,
+  generateTransitionAudio as generateTransitionAudioService,
 } from "../../../services/timelineMergeService";
 import { applyCrossfade } from "../../../utils/crossfadeAlgorithms";
 
@@ -72,6 +73,11 @@ type TimelineAction =
       type: "SET_CROSSFADE_GENERATING";
       crossfadeId: string;
       isGenerating: boolean;
+    }
+  | {
+      type: "SET_CROSSFADE_AUDIO";
+      crossfadeId: string;
+      audioBuffer: AudioBuffer;
     }
   | { type: "SET_PLAYING"; isPlaying: boolean }
   | { type: "SET_CURRENT_TIME"; time: number }
@@ -265,6 +271,16 @@ function timelineReducer(
             : cf,
         ),
         isGeneratingTransition: action.isGenerating,
+      };
+
+    case "SET_CROSSFADE_AUDIO":
+      return {
+        ...state,
+        crossfades: state.crossfades.map((cf) =>
+          cf.id === action.crossfadeId
+            ? { ...cf, transitionAudioBuffer: action.audioBuffer }
+            : cf,
+        ),
       };
 
     case "SET_PLAYING":
@@ -480,15 +496,44 @@ export function TimelineEditorProvider({
   );
 
   const generateTransitionAudio = useCallback(async (crossfadeId: string) => {
-    // This will be implemented with the AI service
+    const crossfade = state.crossfades.find(cf => cf.id === crossfadeId);
+    if (!crossfade) {
+      console.warn("Crossfade not found:", crossfadeId);
+      return;
+    }
+
     dispatch({
       type: "SET_CROSSFADE_GENERATING",
       crossfadeId,
       isGenerating: true,
     });
-    // TODO: Call timelineMergeService.generateTransitionAudio
-    console.log("Generating transition audio for:", crossfadeId);
-  }, []);
+
+    try {
+      const transitionBuffer = await generateTransitionAudioService(
+        crossfade,
+        state.clips,
+        (progress) => {
+          console.log(`Generating transition: ${progress}%`);
+        }
+      );
+
+      if (transitionBuffer) {
+        dispatch({
+          type: "SET_CROSSFADE_AUDIO",
+          crossfadeId,
+          audioBuffer: transitionBuffer,
+        });
+      }
+    } catch (error) {
+      console.error("Error generating transition audio:", error);
+    } finally {
+      dispatch({
+        type: "SET_CROSSFADE_GENERATING",
+        crossfadeId,
+        isGenerating: false,
+      });
+    }
+  }, [state.crossfades, state.clips]);
 
   // Playback controls
   // playFromTime allows seeking to work correctly by passing the target time directly

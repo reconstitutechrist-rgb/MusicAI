@@ -15,6 +15,7 @@ import {
   generateInstrumental,
   generateSongWithLyrics,
   createAudioUrl,
+  estimateCost,
 } from "../../services/elevenLabsMusicService";
 import {
   ChatMessage,
@@ -1202,7 +1203,7 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
                             {useElevenLabsApi && (
                               <p className="text-xs text-gray-500 mt-2">
                                 Using ElevenLabs for high-quality audio (this
-                                may take 30-60 seconds)
+                                may take 30-60 seconds) • Est. cost: {estimateCost(120000).estimatedCost}
                               </p>
                             )}
                           </div>
@@ -1228,14 +1229,21 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
                             format={useElevenLabsApi ? "mp3" : "wav"}
                           />
                         ) : (
-                          <Button
-                            onClick={() => handleGenerateFullSong(i)}
-                            variant="secondary"
-                            size="sm"
-                            className="w-full"
-                          >
-                            Generate Full Song Demo (Instrumental + Vocals)
-                          </Button>
+                          <div className="space-y-2">
+                            <Button
+                              onClick={() => handleGenerateFullSong(i)}
+                              variant="secondary"
+                              size="sm"
+                              className="w-full"
+                            >
+                              Generate Full Song Demo (Instrumental + Vocals)
+                            </Button>
+                            {useElevenLabsApi && (
+                              <p className="text-xs text-gray-500 text-center">
+                                Est. cost: {estimateCost(120000).estimatedCost} (2 × 1 min tracks)
+                              </p>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>

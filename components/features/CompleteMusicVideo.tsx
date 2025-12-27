@@ -168,9 +168,12 @@ const CompleteMusicVideo: React.FC<CompleteMusicVideoProps> = ({
         }
 
         if (currentOperation.error) {
-          throw new Error(
-            currentOperation.error.message || "Video generation failed",
-          );
+          const errorMessage = typeof currentOperation.error === 'object' &&
+            currentOperation.error !== null &&
+            'message' in currentOperation.error
+              ? String((currentOperation.error as { message: unknown }).message)
+              : "Video generation failed";
+          throw new Error(errorMessage);
         }
 
         lastOperation = currentOperation;

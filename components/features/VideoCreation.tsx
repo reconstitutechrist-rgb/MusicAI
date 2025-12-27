@@ -13,6 +13,14 @@ import {
   generateChatResponse,
   summarizeConversationForVideo,
 } from "../../services/geminiService";
+import {
+  initFFmpeg,
+  isFFmpegReady,
+  mergeVideoWithAudio,
+  trimVideo,
+  convertVideoFormat,
+  concatenateVideos,
+} from "../../services/videoProcessingService";
 import { ChatMessage } from "../../types";
 import { useUndoRedo } from "./MusicCreation";
 import CompleteMusicVideo from "./CompleteMusicVideo";
@@ -837,6 +845,398 @@ const MusicVideoGenerator: React.FC<MusicVideoGeneratorProps> = ({
   );
 };
 
+// Video Tools Component - FFmpeg-powered video editing
+const VideoTools: React.FC = () => {
+  const [ffmpegReady, setFfmpegReady] = useState(isFFmpegReady());
+  const [ffmpegLoading, setFfmpegLoading] = useState(false);
+  const [ffmpegProgress, setFfmpegProgress] = useState(0);
+  const [processingStatus, setProcessingStatus] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Video file state
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [outputUrl, setOutputUrl] = useState<string | null>(null);
+
+  // Multiple videos for concatenation
+  const [videoClips, setVideoClips] = useState<{ file: File; url: string }[]>([]);
+
+  // Trim settings
+  const [trimStart, setTrimStart] = useState(0);
+  const [trimDuration, setTrimDuration] = useState(30);
+
+  // Export format
+  const [exportFormat, setExportFormat] = useState<"mp4" | "webm">("mp4");
+
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
+  const clipsInputRef = useRef<HTMLInputElement>(null);
+
+  const handleInitFFmpeg = async () => {
+    setFfmpegLoading(true);
+    try {
+      await initFFmpeg((progress) => setFfmpegProgress(progress));
+      setFfmpegReady(true);
+    } catch (error) {
+      console.error("Failed to load FFmpeg:", error);
+    } finally {
+      setFfmpegLoading(false);
+    }
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setVideoFile(file);
+      if (videoUrl) URL.revokeObjectURL(videoUrl);
+      setVideoUrl(URL.createObjectURL(file));
+      setOutputUrl(null);
+    }
+  };
+
+  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAudioFile(file);
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+      setAudioUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleMergeVideoAudio = async () => {
+    if (!videoUrl || !audioUrl) return;
+    setIsProcessing(true);
+    try {
+      const result = await mergeVideoWithAudio(videoUrl, audioUrl, exportFormat, setProcessingStatus);
+      if (outputUrl) URL.revokeObjectURL(outputUrl);
+      setOutputUrl(result);
+      setProcessingStatus("Merge complete!");
+    } catch (error) {
+      console.error("Merge failed:", error);
+      setProcessingStatus("Merge failed. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleTrimVideo = async () => {
+    if (!videoUrl) return;
+    setIsProcessing(true);
+    setProcessingStatus("Trimming video...");
+    try {
+      const result = await trimVideo(videoUrl, trimStart, trimDuration);
+      if (outputUrl) URL.revokeObjectURL(outputUrl);
+      setOutputUrl(result);
+      setProcessingStatus("Trim complete!");
+    } catch (error) {
+      console.error("Trim failed:", error);
+      setProcessingStatus("Trim failed. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleConvertFormat = async () => {
+    if (!videoUrl) return;
+    setIsProcessing(true);
+    setProcessingStatus("Converting format...");
+    try {
+      const inputFormat = videoFile?.name.split(".").pop() || "mp4";
+      const result = await convertVideoFormat(videoUrl, inputFormat, exportFormat);
+      if (outputUrl) URL.revokeObjectURL(outputUrl);
+      setOutputUrl(result);
+      setProcessingStatus("Conversion complete!");
+    } catch (error) {
+      console.error("Conversion failed:", error);
+      setProcessingStatus("Conversion failed. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleClipsUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const newClips = files.map((file) => ({
+      file,
+      url: URL.createObjectURL(file),
+    }));
+    setVideoClips((prev) => [...prev, ...newClips]);
+  };
+
+  const handleRemoveClip = (index: number) => {
+    setVideoClips((prev) => {
+      URL.revokeObjectURL(prev[index].url);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handleConcatenateVideos = async () => {
+    if (videoClips.length < 2) return;
+    setIsProcessing(true);
+    try {
+      const clipUrls = videoClips.map((c) => c.url);
+      const result = await concatenateVideos(clipUrls, exportFormat, setProcessingStatus);
+      if (outputUrl) URL.revokeObjectURL(outputUrl);
+      setOutputUrl(result);
+      setProcessingStatus("Concatenation complete!");
+    } catch (error) {
+      console.error("Concatenation failed:", error);
+      setProcessingStatus("Concatenation failed. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!outputUrl) return;
+    const a = document.createElement("a");
+    a.href = outputUrl;
+    a.download = `processed-video.${exportFormat}`;
+    a.click();
+  };
+
+  if (!ffmpegReady) {
+    return (
+      <Card>
+        <div className="text-center py-8">
+          <h3 className="text-xl font-bold text-white mb-4">Video Processing Tools</h3>
+          <p className="text-gray-400 mb-4">
+            These tools use FFmpeg for client-side video processing.
+            This requires loading ~30MB of processing libraries.
+          </p>
+          <Button
+            onClick={handleInitFFmpeg}
+            disabled={ffmpegLoading}
+            variant="primary"
+          >
+            {ffmpegLoading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Loading FFmpeg ({ffmpegProgress}%)
+              </span>
+            ) : (
+              "Load Video Tools"
+            )}
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <h3 className="text-lg font-bold text-white mb-4">Upload Files</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Video Upload */}
+          <div>
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              onChange={handleVideoUpload}
+              className="hidden"
+            />
+            <Button
+              onClick={() => videoInputRef.current?.click()}
+              variant="secondary"
+              className="w-full"
+            >
+              {videoFile ? `📹 ${videoFile.name}` : "Upload Video"}
+            </Button>
+            {videoUrl && (
+              <video
+                src={videoUrl}
+                controls
+                className="mt-2 w-full rounded-lg max-h-48 object-contain bg-black"
+              />
+            )}
+          </div>
+
+          {/* Audio Upload */}
+          <div>
+            <input
+              ref={audioInputRef}
+              type="file"
+              accept="audio/*"
+              onChange={handleAudioUpload}
+              className="hidden"
+            />
+            <Button
+              onClick={() => audioInputRef.current?.click()}
+              variant="secondary"
+              className="w-full"
+            >
+              {audioFile ? `🎵 ${audioFile.name}` : "Upload Audio (for merge)"}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      <Card>
+        <h3 className="text-lg font-bold text-white mb-4">Processing Tools</h3>
+
+        {/* Merge Video + Audio */}
+        <div className="mb-4 p-4 bg-gray-800/50 rounded-lg">
+          <h4 className="text-sm font-semibold text-gray-300 mb-2">Merge Video with Audio</h4>
+          <p className="text-xs text-gray-500 mb-3">Replace or add audio track to video</p>
+          <Button
+            onClick={handleMergeVideoAudio}
+            disabled={!videoUrl || !audioUrl || isProcessing}
+            variant="primary"
+            size="sm"
+          >
+            Merge Audio + Video
+          </Button>
+        </div>
+
+        {/* Trim Video */}
+        <div className="mb-4 p-4 bg-gray-800/50 rounded-lg">
+          <h4 className="text-sm font-semibold text-gray-300 mb-2">Trim Video</h4>
+          <div className="flex gap-4 mb-3">
+            <div>
+              <label className="text-xs text-gray-500">Start (sec)</label>
+              <input
+                type="number"
+                min={0}
+                value={trimStart}
+                onChange={(e) => setTrimStart(Number(e.target.value))}
+                className="w-24 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Duration (sec)</label>
+              <input
+                type="number"
+                min={1}
+                value={trimDuration}
+                onChange={(e) => setTrimDuration(Number(e.target.value))}
+                className="w-24 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+              />
+            </div>
+          </div>
+          <Button
+            onClick={handleTrimVideo}
+            disabled={!videoUrl || isProcessing}
+            variant="primary"
+            size="sm"
+          >
+            Trim Video
+          </Button>
+        </div>
+
+        {/* Convert Format */}
+        <div className="mb-4 p-4 bg-gray-800/50 rounded-lg">
+          <h4 className="text-sm font-semibold text-gray-300 mb-2">Convert Format</h4>
+          <div className="flex gap-4 mb-3 items-center">
+            <label className="text-xs text-gray-500">Output Format:</label>
+            <select
+              value={exportFormat}
+              onChange={(e) => setExportFormat(e.target.value as "mp4" | "webm")}
+              className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+            >
+              <option value="mp4">MP4</option>
+              <option value="webm">WebM</option>
+            </select>
+          </div>
+          <Button
+            onClick={handleConvertFormat}
+            disabled={!videoUrl || isProcessing}
+            variant="primary"
+            size="sm"
+          >
+            Convert Format
+          </Button>
+        </div>
+
+        {/* Concatenate Videos */}
+        <div className="mb-4 p-4 bg-gray-800/50 rounded-lg">
+          <h4 className="text-sm font-semibold text-gray-300 mb-2">Combine Video Clips</h4>
+          <p className="text-xs text-gray-500 mb-3">Join multiple video clips into one continuous video</p>
+          <input
+            ref={clipsInputRef}
+            type="file"
+            accept="video/*"
+            multiple
+            onChange={handleClipsUpload}
+            className="hidden"
+          />
+          <Button
+            onClick={() => clipsInputRef.current?.click()}
+            variant="secondary"
+            size="sm"
+            className="mb-3"
+          >
+            Add Video Clips
+          </Button>
+          {videoClips.length > 0 && (
+            <div className="space-y-2 mb-3">
+              {videoClips.map((clip, i) => (
+                <div key={i} className="flex items-center justify-between bg-gray-700/50 rounded px-3 py-2">
+                  <span className="text-sm text-gray-300">{i + 1}. {clip.file.name}</span>
+                  <button
+                    onClick={() => handleRemoveClip(i)}
+                    className="text-red-400 hover:text-red-300 text-xs"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <Button
+            onClick={handleConcatenateVideos}
+            disabled={videoClips.length < 2 || isProcessing}
+            variant="primary"
+            size="sm"
+          >
+            Combine {videoClips.length} Clips
+          </Button>
+        </div>
+
+        {/* Processing Status */}
+        {processingStatus && (
+          <div className={`mt-4 p-3 rounded-lg ${
+            processingStatus.includes("complete")
+              ? "bg-green-900/30 border border-green-500/30 text-green-400"
+              : processingStatus.includes("failed")
+              ? "bg-red-900/30 border border-red-500/30 text-red-400"
+              : "bg-blue-900/30 border border-blue-500/30 text-blue-400"
+          }`}>
+            {isProcessing && (
+              <svg className="animate-spin h-4 w-4 inline mr-2" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            )}
+            {processingStatus}
+          </div>
+        )}
+      </Card>
+
+      {/* Output Preview */}
+      {outputUrl && (
+        <Card>
+          <h3 className="text-lg font-bold text-white mb-4">Result</h3>
+          <video
+            src={outputUrl}
+            controls
+            className="w-full rounded-lg max-h-96 object-contain bg-black mb-4"
+          />
+          <Button onClick={handleDownload} variant="primary">
+            Download Processed Video
+          </Button>
+        </Card>
+      )}
+    </div>
+  );
+};
+
 // Main VideoCreation component
 const VideoCreation: React.FC<VideoCreationProps> = (props) => {
   const [currentImage, setCurrentImage] = useState<{
@@ -864,6 +1264,10 @@ const VideoCreation: React.FC<VideoCreationProps> = (props) => {
           setCurrentImage={setCurrentImage}
         />
       ),
+    },
+    {
+      name: "Video Tools",
+      content: <VideoTools />,
     },
   ];
 

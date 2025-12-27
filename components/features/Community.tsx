@@ -10,10 +10,63 @@ import AIShowcaseSection from "../community/AIShowcaseSection";
 
 type CommunityTab = "karaoke" | "showcase";
 
+// Mock data for demo mode
+const MOCK_SHOWCASES = [
+  {
+    id: "demo-1",
+    title: "Midnight Dreams",
+    description: "A chill lo-fi beat with dreamy synths",
+    genre: "Lo-Fi",
+    mood: "Chill",
+    creator: { username: "demo_producer", displayName: "Demo Producer" },
+    playCount: 1234,
+    likeCount: 89,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "demo-2",
+    title: "Electric Pulse",
+    description: "High-energy EDM track with heavy bass drops",
+    genre: "Electronic",
+    mood: "Energetic",
+    creator: { username: "ai_composer", displayName: "AI Composer" },
+    playCount: 567,
+    likeCount: 45,
+    createdAt: new Date().toISOString(),
+  },
+];
+
+const MOCK_COLLABS = [
+  {
+    id: "collab-1",
+    title: "Summer Vibes Duet",
+    description: "Looking for a vocalist to add harmonies to this upbeat summer track",
+    genre: "Pop",
+    mood: "Happy",
+    status: "open",
+    owner: { username: "beat_maker", displayName: "Beat Maker" },
+    partsNeeded: ["Harmony", "Ad-libs"],
+    deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "collab-2",
+    title: "Acoustic Cover Project",
+    description: "Need guitar and vocals for an acoustic cover",
+    genre: "Acoustic",
+    mood: "Mellow",
+    status: "open",
+    owner: { username: "singer_songwriter", displayName: "Singer Songwriter" },
+    partsNeeded: ["Lead Vocals", "Guitar"],
+    createdAt: new Date().toISOString(),
+  },
+];
+
 const Community: React.FC = () => {
   const { isAuthenticated, profile, signOut, isConfigured } = useAuth();
   const [activeTab, setActiveTab] = useState<CommunityTab>("karaoke");
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [demoMode, setDemoMode] = useState(!isConfigured);
 
   return (
     <div className="space-y-6">
@@ -87,22 +140,88 @@ const Community: React.FC = () => {
         </button>
       </div>
 
-      {/* Content */}
-      {!isConfigured ? (
-        <Card className="text-center py-12">
-          <div className="text-6xl mb-4">🔧</div>
-          <h3 className="text-xl font-semibold text-white mb-2">
-            Setup Required
-          </h3>
-          <p className="text-gray-400 max-w-md mx-auto mb-6">
-            Community features require Supabase configuration. Add your
-            credentials to the environment variables to enable this feature.
-          </p>
-          <div className="bg-gray-900 rounded-lg p-4 max-w-sm mx-auto font-mono text-sm text-gray-300 text-left">
-            <p>VITE_SUPABASE_URL=your-url</p>
-            <p>VITE_SUPABASE_ANON_KEY=your-key</p>
+      {/* Demo Mode Banner */}
+      {demoMode && (
+        <div className="bg-amber-900/30 border border-amber-500/30 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🎭</span>
+            <div>
+              <p className="text-amber-400 font-medium">Demo Mode</p>
+              <p className="text-amber-300/70 text-sm">
+                Showing sample content. {!isConfigured && "Configure Supabase to enable full functionality."}
+              </p>
+            </div>
           </div>
-        </Card>
+          {isConfigured && (
+            <Button size="sm" variant="secondary" onClick={() => setDemoMode(false)}>
+              Exit Demo
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Content */}
+      {demoMode ? (
+        // Demo Mode Content
+        activeTab === "karaoke" ? (
+          <div className="space-y-4">
+            {MOCK_COLLABS.map((collab) => (
+              <Card key={collab.id} className="hover:border-indigo-500/30 transition-colors">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">{collab.title}</h3>
+                    <p className="text-gray-400 text-sm mt-1">{collab.description}</p>
+                    <div className="flex gap-2 mt-3">
+                      <span className="px-2 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded">
+                        {collab.genre}
+                      </span>
+                      <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded">
+                        {collab.mood}
+                      </span>
+                      <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded">
+                        {collab.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-400">by {collab.owner.displayName}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Parts: {collab.partsNeeded.join(", ")}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {MOCK_SHOWCASES.map((showcase) => (
+              <Card key={showcase.id} className="hover:border-purple-500/30 transition-colors">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">{showcase.title}</h3>
+                    <p className="text-gray-400 text-sm mt-1">{showcase.description}</p>
+                    <div className="flex gap-2 mt-3">
+                      <span className="px-2 py-1 bg-indigo-500/20 text-indigo-400 text-xs rounded">
+                        {showcase.genre}
+                      </span>
+                      <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded">
+                        {showcase.mood}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-400">by {showcase.creator.displayName}</p>
+                    <div className="flex gap-3 mt-2 text-xs text-gray-500">
+                      <span>▶ {showcase.playCount}</span>
+                      <span>❤ {showcase.likeCount}</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )
       ) : activeTab === "karaoke" ? (
         <KaraokeCollabSection
           onAuthRequired={() => setShowAuthModal(true)}

@@ -2621,6 +2621,33 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
     }));
   }, [availableKaraokeSongs]);
 
+  // Handle uploaded song for timeline editor
+  const handleUploadSong = useCallback(async (file: File): Promise<LibrarySong> => {
+    // Create object URL for the uploaded file
+    const audioUrl = URL.createObjectURL(file);
+
+    // Create a new LibrarySong from the uploaded file
+    const newSong: LibrarySong = {
+      id: `upload-${Date.now()}`,
+      title: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
+      style: 'Uploaded',
+      audioUrl,
+      duration: 0, // Will be updated when audio loads
+      analysis: undefined,
+    };
+
+    // Get duration from audio
+    const audio = new Audio(audioUrl);
+    await new Promise<void>((resolve) => {
+      audio.onloadedmetadata = () => {
+        newSong.duration = audio.duration;
+        resolve();
+      };
+    });
+
+    return newSong;
+  }, []);
+
   // Handle merged audio from timeline editor
   const handleTimelineExport = useCallback((audioBlob: Blob, audioUrl: string) => {
     setVocalAudioUrl(audioUrl);
@@ -2641,6 +2668,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
             audioContext={audioContext}
             onClose={() => setIsTimelineEditorMode(false)}
             onExport={handleTimelineExport}
+            onUploadSong={handleUploadSong}
           />
         </div>
       </Page>
@@ -2734,14 +2762,12 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                   Studio Mixer
                 </h3>
                 <div className="flex items-center gap-2">
-                  {availableKaraokeSongs.length >= 2 && (
-                    <button
-                      onClick={() => setIsTimelineEditorMode(true)}
-                      className="text-xs px-3 py-1 rounded-full transition-colors bg-gradient-to-r from-purple-600/20 to-indigo-600/20 text-purple-400 border border-purple-500/50 hover:from-purple-600/30 hover:to-indigo-600/30 flex items-center gap-1"
-                    >
-                      <span>🎚️</span> Song Merger
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setIsTimelineEditorMode(true)}
+                    className="text-xs px-3 py-1 rounded-full transition-colors bg-gradient-to-r from-purple-600/20 to-indigo-600/20 text-purple-400 border border-purple-500/50 hover:from-purple-600/30 hover:to-indigo-600/30 flex items-center gap-1"
+                  >
+                    <span>🎚️</span> Song Merger
+                  </button>
                   {availableKaraokeSongs.length > 0 && (
                     <button
                       onClick={() => setIsKaraokeMode(true)}

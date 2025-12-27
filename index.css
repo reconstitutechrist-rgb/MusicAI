@@ -1,5 +1,22 @@
 /* MUSE AI - Artistic Theme Styles */
 
+/* Base body styles */
+body {
+  font-family: "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth page transitions */
+* {
+  scroll-behavior: smooth;
+}
+
+/* Prevent layout shift while loading */
+#root {
+  min-height: 100vh;
+}
+
 /* Custom scrollbar - Dark */
 .dark ::-webkit-scrollbar,
 ::-webkit-scrollbar {
