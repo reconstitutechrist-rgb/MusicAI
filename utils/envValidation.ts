@@ -17,7 +17,12 @@ const REQUIRED_ENV_VARS = ["VITE_GEMINI_API_KEY"] as const;
 /**
  * Optional environment variables that enhance functionality
  */
-const OPTIONAL_ENV_VARS = ["VITE_ELEVENLABS_API_KEY"] as const;
+const OPTIONAL_ENV_VARS = [
+  "VITE_ELEVENLABS_API_KEY", // Enhanced music + voice synthesis
+  "VITE_OPENAI_API_KEY", // DALL-E 3 image generation
+  "VITE_CYANITE_API_KEY", // Professional audio analysis
+  "VITE_REPLICATE_API_KEY", // High-quality stem separation
+] as const;
 
 /**
  * Validate all required environment variables

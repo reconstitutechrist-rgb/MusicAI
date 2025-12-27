@@ -365,10 +365,45 @@ export const processAudioTrack = async (
   throw new Error("The AI model did not return processed audio.");
 };
 
+/**
+ * Generate speech using ElevenLabs Voice (preferred) or Gemini TTS (fallback)
+ * ElevenLabs provides industry-leading realistic voice synthesis
+ */
 export const generateSpeech = async (
   text: string,
   voiceName: string = "Kore",
 ): Promise<string> => {
+  // Prefer ElevenLabs Voice when API key is configured
+  if (import.meta.env.VITE_ELEVENLABS_API_KEY) {
+    try {
+      const { generateSpeechSimple } = await import("./elevenLabsVoiceService");
+      console.log("Using ElevenLabs Voice for TTS (best quality)");
+
+      // Map Gemini voice names to ElevenLabs voice preset names
+      const voiceMap: Record<string, string> = {
+        Kore: "rachel", // Female, warm
+        Fenrir: "brian", // Male, deep
+        Aoede: "alice", // Female, confident
+        Charon: "adam", // Male, deep
+        Puck: "ethan", // Male, young
+      };
+
+      const elevenLabsVoice = voiceMap[voiceName] || "rachel";
+      // Cast to the expected type - generateSpeechSimple accepts VoicePreset
+      return await generateSpeechSimple(
+        text,
+        elevenLabsVoice as Parameters<typeof generateSpeechSimple>[1],
+      );
+    } catch (error) {
+      console.warn(
+        "ElevenLabs Voice failed, falling back to Gemini TTS:",
+        error,
+      );
+      // Fall through to Gemini TTS
+    }
+  }
+
+  // Fallback to Gemini TTS
   const ai = getAi();
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash-preview-tts",
@@ -459,10 +494,33 @@ export const generateLineAlternatives = async (
 
 // --- Audio Analyzer Services ---
 
+/**
+ * Analyze an audio track using Cyanite (preferred) or Gemini (fallback)
+ * Cyanite provides industry-standard BPM, key, mood, and genre detection
+ */
 export const analyzeAudioTrack = async (
   audioBase64: string,
   mimeType: string,
 ): Promise<AudioAnalysisResult> => {
+  // Prefer Cyanite when API key is configured
+  if (import.meta.env.VITE_CYANITE_API_KEY) {
+    try {
+      const { analyzeAudioBase64, toAudioAnalysisResult } =
+        await import("./cyaniteService");
+      console.log("Using Cyanite for audio analysis (professional quality)");
+      const cyaniteResult = await analyzeAudioBase64(
+        audioBase64,
+        mimeType,
+        "audio-analysis.mp3",
+      );
+      return toAudioAnalysisResult(cyaniteResult);
+    } catch (error) {
+      console.warn("Cyanite analysis failed, falling back to Gemini:", error);
+      // Fall through to Gemini
+    }
+  }
+
+  // Fallback to Gemini
   const ai = getAi();
   const responseSchema = {
     type: Type.OBJECT,
@@ -511,10 +569,29 @@ export const remixAudioTrack = async (
   );
 };
 
+/**
+ * Generate an image using DALL-E 3 (preferred) or Imagen 4.0 (fallback)
+ * DALL-E 3 provides better prompt accuracy for marketing visuals
+ */
 export const generateImage = async (
   prompt: string,
   aspectRatio: "1:1" | "16:9" | "9:16" | "4:3" | "3:4",
 ): Promise<string> => {
+  // Prefer DALL-E 3 when OpenAI API key is configured
+  if (import.meta.env.VITE_OPENAI_API_KEY) {
+    try {
+      const { generateImageSimple } = await import("./openaiImageService");
+      console.log(
+        "Using DALL-E 3 for image generation (better prompt accuracy)",
+      );
+      return await generateImageSimple(prompt, aspectRatio);
+    } catch (error) {
+      console.warn("DALL-E 3 failed, falling back to Imagen:", error);
+      // Fall through to Imagen
+    }
+  }
+
+  // Fallback to Imagen 4.0
   const ai = getAi();
   const response = await ai.models.generateImages({
     model: "imagen-4.0-generate-001",

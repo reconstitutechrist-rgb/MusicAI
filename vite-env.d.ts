@@ -7,6 +7,15 @@ interface ImportMetaEnv {
   // Optional: Enhanced music generation
   readonly VITE_ELEVENLABS_API_KEY?: string;
 
+  // Optional: DALL-E 3 image generation (better prompt accuracy)
+  readonly VITE_OPENAI_API_KEY?: string;
+
+  // Optional: Professional audio analysis
+  readonly VITE_CYANITE_API_KEY?: string;
+
+  // Optional: High-quality stem separation
+  readonly VITE_REPLICATE_API_KEY?: string;
+
   // Vite built-in variables
   readonly MODE: string;
   readonly DEV: boolean;
