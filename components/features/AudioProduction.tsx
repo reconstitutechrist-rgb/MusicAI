@@ -35,6 +35,9 @@ import {
 } from "../../types";
 import KaraokeMode from "./KaraokeMode";
 import TimelineEditor from "./TimelineEditor/TimelineEditor";
+import StyleContinuation from "./StyleContinuation";
+import { StemBlender } from "./StemBlender";
+import { SeparatedSong } from "../../types/stemBlender";
 import { LibrarySong } from "../../types/timeline";
 import AutomationLane, {
   getValueAtTime,
@@ -336,6 +339,13 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
 
   // Timeline Editor (Song Merger) State
   const [isTimelineEditorMode, setIsTimelineEditorMode] = useState(false);
+
+  // Style Continuation (Style Morph) State
+  const [isStyleMorphMode, setIsStyleMorphMode] = useState(false);
+
+  // Stem Blender State
+  const [isStemBlenderMode, setIsStemBlenderMode] = useState(false);
+  const [pendingStemBlenderSong, setPendingStemBlenderSong] = useState<SeparatedSong | null>(null);
   const [vocalAudioUrl, setVocalAudioUrl] = useState<string | null>(null);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [selectedVoice, setSelectedVoice] = useState("Kore");
@@ -2693,6 +2703,46 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
     );
   }
 
+  // Render Style Morph Mode
+  if (isStyleMorphMode) {
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setIsStyleMorphMode(false)}
+          className="absolute top-4 right-4 z-10 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Mixer
+        </button>
+        <StyleContinuation />
+      </div>
+    );
+  }
+
+  // Render Stem Blender Mode
+  if (isStemBlenderMode) {
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setIsStemBlenderMode(false)}
+          className="absolute top-4 right-4 z-10 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Mixer
+        </button>
+        <StemBlender
+          audioContext={audioContext || undefined}
+          initialSong={pendingStemBlenderSong || undefined}
+          onInitialSongConsumed={() => setPendingStemBlenderSong(null)}
+        />
+      </div>
+    );
+  }
+
   return (
     <Page
       title="Audio Production"
@@ -2761,12 +2811,24 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                 <h3 className="text-xl font-semibold text-indigo-300">
                   Studio Mixer
                 </h3>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
                     onClick={() => setIsTimelineEditorMode(true)}
                     className="text-xs px-3 py-1 rounded-full transition-colors bg-gradient-to-r from-purple-600/20 to-indigo-600/20 text-purple-400 border border-purple-500/50 hover:from-purple-600/30 hover:to-indigo-600/30 flex items-center gap-1"
                   >
                     <span>🎚️</span> Song Merger
+                  </button>
+                  <button
+                    onClick={() => setIsStyleMorphMode(true)}
+                    className="text-xs px-3 py-1 rounded-full transition-colors bg-gradient-to-r from-pink-600/20 to-purple-600/20 text-pink-400 border border-pink-500/50 hover:from-pink-600/30 hover:to-purple-600/30 flex items-center gap-1"
+                  >
+                    <span>🎨</span> Style Morph
+                  </button>
+                  <button
+                    onClick={() => setIsStemBlenderMode(true)}
+                    className="text-xs px-3 py-1 rounded-full transition-colors bg-gradient-to-r from-orange-600/20 to-yellow-600/20 text-orange-400 border border-orange-500/50 hover:from-orange-600/30 hover:to-yellow-600/30 flex items-center gap-1"
+                  >
+                    <span>🎛️</span> Stem Blender
                   </button>
                   {availableKaraokeSongs.length > 0 && (
                     <button
@@ -4123,6 +4185,10 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                         onStemsExtracted={(stems) => {
                           console.log("Extracted stems:", stems);
                           // Could integrate with mixer or export
+                        }}
+                        onSendToBlender={(separatedSong) => {
+                          setPendingStemBlenderSong(separatedSong);
+                          setIsStemBlenderMode(true);
                         }}
                       />
                     )}

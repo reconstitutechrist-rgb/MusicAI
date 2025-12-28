@@ -5,12 +5,19 @@ import React, {
   ReactNode,
   useEffect,
 } from "react";
+import {
+  SeparatedSong,
+  StemTrack,
+  StemType as BlenderStemType,
+} from "../../types/stemBlender";
+import { audioBufferToBlobUrl } from "../../utils/audioBufferToWav";
 
 type SeparationMethod = "local" | "lalal" | "audioshake";
 
 interface StemSeparatorProps {
   audioContext: AudioContext | null;
   onStemsExtracted?: (stems: ExtractedStems) => void;
+  onSendToBlender?: (separatedSong: SeparatedSong) => void;
 }
 
 interface AIServiceConfig {
@@ -124,6 +131,7 @@ const STEM_CONFIGS: Record<StemType, StemConfig> = {
 const StemSeparator: React.FC<StemSeparatorProps> = ({
   audioContext,
   onStemsExtracted,
+  onSendToBlender,
 }) => {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
@@ -664,6 +672,67 @@ const StemSeparator: React.FC<StemSeparatorProps> = ({
     }
   }, [processStem]);
 
+  // Helper to create a StemTrack from an AudioBuffer
+  const createStemTrack = useCallback(
+    (
+      buffer: AudioBuffer,
+      type: BlenderStemType,
+      songId: string,
+      songTitle: string
+    ): StemTrack => {
+      return {
+        id: `${songId}-${type}`,
+        type,
+        songId,
+        songTitle,
+        audioUrl: audioBufferToBlobUrl(buffer),
+        audioBuffer: buffer,
+        waveformData: null, // Could be generated if needed
+        duration: buffer.duration,
+      };
+    },
+    []
+  );
+
+  // Send separated stems to Blender
+  const handleSendToBlender = useCallback(() => {
+    if (!audioFile || !onSendToBlender) return;
+
+    const hasAnyStems = Object.values(extractedStems).some((s) => s !== null);
+    if (!hasAnyStems) return;
+
+    const songId = `separated-${Date.now()}`;
+    const songTitle = audioFile.name.replace(/\.[^/.]+$/, "");
+
+    const separatedSong: SeparatedSong = {
+      id: songId,
+      originalTitle: songTitle,
+      originalAudioUrl: audioBuffer ? audioBufferToBlobUrl(audioBuffer) : "",
+      separatedAt: Date.now(),
+      stems: {
+        vocals: extractedStems.vocals
+          ? createStemTrack(extractedStems.vocals, "vocals", songId, songTitle)
+          : null,
+        drums: extractedStems.drums
+          ? createStemTrack(extractedStems.drums, "drums", songId, songTitle)
+          : null,
+        bass: extractedStems.bass
+          ? createStemTrack(extractedStems.bass, "bass", songId, songTitle)
+          : null,
+        // Map "instrumental" to "other" for the blender
+        other: extractedStems.instrumental
+          ? createStemTrack(extractedStems.instrumental, "other", songId, songTitle)
+          : null,
+      },
+      analysis: null, // Could be enhanced with Cyanite analysis
+    };
+
+    onSendToBlender(separatedSong);
+  }, [audioFile, audioBuffer, extractedStems, onSendToBlender, createStemTrack]);
+
+  // Check if any stems are extracted
+  const hasExtractedStems = Object.values(extractedStems).some((s) => s !== null);
+
   return (
     <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden">
       {/* Header */}
@@ -1002,13 +1071,26 @@ const StemSeparator: React.FC<StemSeparatorProps> = ({
         <div className="p-4">
           <div className="flex justify-between items-center mb-3">
             <p className="text-xs text-gray-500 uppercase">Available Stems</p>
-            <button
-              onClick={processAllStems}
-              disabled={processing}
-              className="text-xs px-3 py-1 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 rounded text-white transition-colors"
-            >
-              Extract All
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={processAllStems}
+                disabled={processing}
+                className="text-xs px-3 py-1 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 rounded text-white transition-colors"
+              >
+                Extract All
+              </button>
+              {onSendToBlender && hasExtractedStems && (
+                <button
+                  onClick={handleSendToBlender}
+                  className="text-xs px-3 py-1 bg-purple-600 hover:bg-purple-500 rounded text-white transition-colors flex items-center gap-1"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Send to Blender
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
