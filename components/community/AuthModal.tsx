@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useId } from "react";
 import Button from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
+import { useModal } from "../../hooks/useModal";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -18,6 +19,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Generate unique IDs for form fields
+  const formId = useId();
+  const usernameId = `${formId}-username`;
+  const emailId = `${formId}-email`;
+  const passwordId = `${formId}-password`;
+  const passwordHintId = `${formId}-password-hint`;
+  const errorId = `${formId}-error`;
+
+  // Use modal accessibility hook
+  const { modalRef, overlayProps, contentProps, closeButtonProps, titleProps } = useModal({
+    isOpen,
+    onClose,
+    descriptionId: error ? errorId : undefined,
+  });
 
   if (!isOpen) return null;
 
@@ -65,9 +81,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   if (!isConfigured) {
     return (
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-700">
-          <h2 className="text-2xl font-bold text-white mb-4">
+      <div
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+        {...overlayProps}
+      >
+        <div
+          ref={modalRef as React.RefObject<HTMLDivElement>}
+          {...contentProps}
+          className="bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-700"
+        >
+          <h2 {...titleProps} className="text-2xl font-bold text-white mb-4">
             Community Features Unavailable
           </h2>
           <p className="text-gray-400 mb-6">
@@ -78,7 +101,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <p>VITE_SUPABASE_URL=your-url</p>
             <p>VITE_SUPABASE_ANON_KEY=your-key</p>
           </div>
-          <Button onClick={onClose} variant="secondary" className="w-full">
+          <Button {...closeButtonProps} variant="secondary" className="w-full">
             Close
           </Button>
         </div>
@@ -88,11 +111,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   if (success) {
     return (
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-700">
+      <div
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+        {...overlayProps}
+      >
+        <div
+          ref={modalRef as React.RefObject<HTMLDivElement>}
+          {...contentProps}
+          className="bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-700"
+        >
           <div className="text-center">
-            <div className="text-5xl mb-4">✉️</div>
-            <h2 className="text-2xl font-bold text-white mb-4">
+            <div className="text-5xl mb-4" role="img" aria-label="Email icon">✉️</div>
+            <h2 {...titleProps} className="text-2xl font-bold text-white mb-4">
               Check Your Email
             </h2>
             <p className="text-gray-400 mb-6">
@@ -109,22 +139,30 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-700">
+    <div
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+      {...overlayProps}
+    >
+      <div
+        ref={modalRef as React.RefObject<HTMLDivElement>}
+        {...contentProps}
+        className="bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-700"
+      >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">
+          <h2 {...titleProps} className="text-2xl font-bold text-white">
             {mode === "signin" ? "Welcome Back" : "Join the Community"}
           </h2>
           <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            {...closeButtonProps}
+            className="text-gray-400 hover:text-white transition-colors p-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <svg
               className="w-6 h-6"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -140,39 +178,53 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "signup" && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label
+                htmlFor={usernameId}
+                className="block text-sm font-medium text-gray-300 mb-2"
+              >
                 Username
               </label>
               <input
+                id={usernameId}
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-gray-700/50 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 placeholder="Choose a unique username"
                 required={mode === "signup"}
+                autoComplete="username"
               />
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label
+              htmlFor={emailId}
+              className="block text-sm font-medium text-gray-300 mb-2"
+            >
               Email
             </label>
             <input
+              id={emailId}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-xl bg-gray-700/50 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="your@email.com"
               required
+              autoComplete="email"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label
+              htmlFor={passwordId}
+              className="block text-sm font-medium text-gray-300 mb-2"
+            >
               Password
             </label>
             <input
+              id={passwordId}
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -180,11 +232,23 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               placeholder="••••••••"
               required
               minLength={6}
+              aria-describedby={mode === "signup" ? passwordHintId : undefined}
+              autoComplete={mode === "signin" ? "current-password" : "new-password"}
             />
+            {mode === "signup" && (
+              <p id={passwordHintId} className="mt-1 text-xs text-gray-500">
+                Password must be at least 6 characters
+              </p>
+            )}
           </div>
 
           {error && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            <div
+              id={errorId}
+              role="alert"
+              aria-live="assertive"
+              className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm"
+            >
               {error}
             </div>
           )}
@@ -203,7 +267,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={switchMode}
-              className="ml-2 text-indigo-400 hover:text-indigo-300 font-medium"
+              className="ml-2 text-indigo-400 hover:text-indigo-300 font-medium focus:outline-none focus:underline"
             >
               {mode === "signin" ? "Sign Up" : "Sign In"}
             </button>

@@ -31,8 +31,7 @@ import AudioAnalyzer from "./components/features/AudioAnalyzer";
 import RemixStudio from "./components/features/RemixStudio";
 import Community from "./components/features/Community";
 import { AuthProvider } from "./context/AuthContext";
-import ToastContainer from "./components/ui/ToastContainer";
-import { ToastProvider } from "./components/ui/Toast";
+import ToastContainer from "./components/ui/Toast";
 import ThemeToggle from "./components/ui/ThemeToggle";
 import { useTheme, useMusicState } from "./context/AppContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -225,8 +224,7 @@ const App: React.FC = () => {
 
   return (
     <AuthProvider>
-      <ToastProvider>
-        <LiveRegionProvider>
+      <LiveRegionProvider>
           <ErrorBoundary>
             <div
               className={`flex min-h-screen overflow-hidden ${
@@ -442,8 +440,7 @@ const App: React.FC = () => {
               </main>
             </div>
           </ErrorBoundary>
-        </LiveRegionProvider>
-      </ToastProvider>
+      </LiveRegionProvider>
     </AuthProvider>
   );
 };

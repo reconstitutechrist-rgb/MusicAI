@@ -2,6 +2,7 @@ import React from "react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
+  loadingText?: string;
   variant?: "primary" | "secondary" | "ghost" | "gradient";
   size?: "sm" | "md" | "lg";
   children: React.ReactNode;
@@ -9,40 +10,42 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const Button: React.FC<ButtonProps> = ({
   isLoading = false,
+  loadingText,
   variant = "primary",
   size = "md",
   children,
   className = "",
+  "aria-label": ariaLabel,
   ...props
 }) => {
   const baseClasses = `
-    inline-flex items-center justify-center 
+    inline-flex items-center justify-center
     rounded-xl font-semibold
     focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900
-    disabled:opacity-50 disabled:cursor-not-allowed 
+    disabled:opacity-50 disabled:cursor-not-allowed
     transition-all duration-200 ease-out
     press-effect hover-lift
   `;
 
   const variantClasses = {
     primary: `
-      bg-gradient-to-r from-indigo-600 to-indigo-500 
-      text-white 
-      hover:from-indigo-500 hover:to-indigo-400 
+      bg-gradient-to-r from-indigo-600 to-indigo-500
+      text-white
+      hover:from-indigo-500 hover:to-indigo-400
       focus:ring-indigo-500
       shadow-lg shadow-indigo-500/25
       hover:shadow-xl hover:shadow-indigo-500/30
     `,
     secondary: `
       glass
-      text-gray-200 
+      text-gray-200
       hover:bg-white/10 hover:text-white
       focus:ring-gray-500
       border border-gray-600/50 hover:border-gray-500/50
     `,
     ghost: `
-      bg-transparent 
-      text-indigo-400 
+      bg-transparent
+      text-indigo-400
       hover:bg-indigo-500/10 hover:text-indigo-300
       focus:ring-indigo-500
     `,
@@ -63,10 +66,20 @@ const Button: React.FC<ButtonProps> = ({
     lg: "px-8 py-4 text-lg gap-3",
   };
 
+  // Determine the accessible label
+  // Only override with aria-label if explicitly provided, or if there's a custom loading text
+  // The visible text content serves as the accessible name by default
+  const accessibleLabel = isLoading && loadingText
+    ? loadingText
+    : ariaLabel;
+
   return (
     <button
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       disabled={isLoading || props.disabled}
+      aria-busy={isLoading}
+      aria-disabled={isLoading || props.disabled}
+      aria-label={accessibleLabel}
       {...props}
     >
       {isLoading && (
@@ -75,6 +88,7 @@ const Button: React.FC<ButtonProps> = ({
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <circle
             className="opacity-25"
@@ -91,7 +105,16 @@ const Button: React.FC<ButtonProps> = ({
           ></path>
         </svg>
       )}
-      {children}
+      {/*
+        Show loading text when loading (both visually and to AT)
+        Show children when not loading
+        This ensures visual and auditory experience match
+      */}
+      {isLoading ? (
+        <span>{loadingText || "Loading..."}</span>
+      ) : (
+        <span>{children}</span>
+      )}
     </button>
   );
 };

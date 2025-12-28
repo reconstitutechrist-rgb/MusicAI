@@ -9,9 +9,18 @@ import React, {
 interface TabsProps {
   tabs: { name: string; content: ReactNode; icon?: ReactNode }[];
   id?: string; // Optional ID prefix for ARIA relationships
+  /** Accessible label for the tablist - describes the purpose of these tabs */
+  ariaLabel?: string;
+  /** If true, keep all panels mounted but hidden (preserves state). Default: false */
+  keepMounted?: boolean;
 }
 
-const Tabs: React.FC<TabsProps> = ({ tabs, id = "tabs" }) => {
+const Tabs: React.FC<TabsProps> = ({
+  tabs,
+  id = "tabs",
+  ariaLabel,
+  keepMounted = false,
+}) => {
   const [activeTab, setActiveTab] = useState(0);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -62,7 +71,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs, id = "tabs" }) => {
         <nav
           className="flex gap-2 p-1 glass rounded-xl"
           role="tablist"
-          aria-label="Tabs"
+          aria-label={ariaLabel || "Tabs"}
         >
           {tabs.map((tab, index) => {
             const tabId = `${id}-tab-${index}`;
@@ -125,17 +134,37 @@ const Tabs: React.FC<TabsProps> = ({ tabs, id = "tabs" }) => {
         />
       </div>
 
-      {/* Tab Content Panel */}
-      <div
-        id={`${id}-panel-${activeTab}`}
-        role="tabpanel"
-        aria-labelledby={`${id}-tab-${activeTab}`}
-        tabIndex={0}
-        className="mt-6 animate-fade-in-up focus:outline-none"
-        key={activeTab}
-      >
-        {tabs[activeTab].content}
-      </div>
+      {/* Tab Content Panels */}
+      {keepMounted ? (
+        // Keep all panels mounted for state preservation
+        tabs.map((tab, index) => {
+          const isActive = activeTab === index;
+          return (
+            <div
+              key={`${id}-panel-${index}`}
+              id={`${id}-panel-${index}`}
+              role="tabpanel"
+              aria-labelledby={`${id}-tab-${index}`}
+              tabIndex={isActive ? 0 : -1}
+              hidden={!isActive}
+              className={`mt-6 focus:outline-none ${isActive ? "animate-fade-in-up" : ""}`}
+            >
+              {tab.content}
+            </div>
+          );
+        })
+      ) : (
+        // Only render active panel (default behavior)
+        <div
+          id={`${id}-panel-${activeTab}`}
+          role="tabpanel"
+          aria-labelledby={`${id}-tab-${activeTab}`}
+          tabIndex={0}
+          className="mt-6 animate-fade-in-up focus:outline-none"
+        >
+          {tabs[activeTab].content}
+        </div>
+      )}
     </div>
   );
 };
