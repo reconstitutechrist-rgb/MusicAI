@@ -33,7 +33,10 @@ import Community from "./components/features/Community";
 import { AuthProvider } from "./context/AuthContext";
 import ToastContainer from "./components/ui/Toast";
 import ThemeToggle from "./components/ui/ThemeToggle";
-import { useTheme, useMusicState } from "./context/AppContext";
+import SessionRestorePrompt from "./components/ui/SessionRestorePrompt";
+import Breadcrumb, { BreadcrumbItem, HomeIcon } from "./components/ui/Breadcrumb";
+import WorkflowProgress, { MUSIC_CREATION_STEPS } from "./components/ui/WorkflowProgress";
+import { useTheme, useMusicState, useWorkflow } from "./context/AppContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LiveRegionProvider } from "./components/ui/LiveRegion";
 import {
@@ -66,6 +69,7 @@ const App: React.FC = () => {
     vocalUrl,
     setVocalUrl,
   } = useMusicState();
+  const { completedSteps } = useWorkflow();
 
   const [activeView, setActiveView] = useState<View>("create");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -109,6 +113,55 @@ const App: React.FC = () => {
         return "marketing";
       default:
         return "music";
+    }
+  };
+
+  // Generate breadcrumb items based on current view
+  const getBreadcrumbItems = (): BreadcrumbItem[] => {
+    const home: BreadcrumbItem = {
+      label: "Home",
+      icon: <HomeIcon className="w-4 h-4" />,
+      onClick: () => setActiveView("create"),
+    };
+
+    const viewInfo: Record<View, { section: string; label: string }> = {
+      create: { section: "Creation", label: "Compose" },
+      lab: { section: "Creation", label: "Lyric Lab" },
+      produce: { section: "Production", label: "Audio Production" },
+      remix: { section: "Tools", label: "Remix Studio" },
+      analyze: { section: "Tools", label: "Audio Critic" },
+      video: { section: "Promotion", label: "Video" },
+      market: { section: "Promotion", label: "Marketing" },
+      assist: { section: "Promotion", label: "Assistant" },
+      community: { section: "Promotion", label: "Community" },
+    };
+
+    const info = viewInfo[activeView];
+    return [
+      home,
+      { label: info.section },
+      { label: info.label },
+    ];
+  };
+
+  // Map view to workflow step for progress indicator
+  const getWorkflowStep = (): string => {
+    switch (activeView) {
+      case "create":
+      case "lab":
+        return "compose";
+      case "produce":
+      case "remix":
+      case "analyze":
+        return "produce";
+      case "video":
+        return "video";
+      case "market":
+      case "assist":
+      case "community":
+        return "market";
+      default:
+        return "compose";
     }
   };
 
@@ -240,6 +293,9 @@ const App: React.FC = () => {
 
               {/* Toast notifications */}
               <ToastContainer />
+
+              {/* Session restore prompt */}
+              <SessionRestorePrompt />
 
               {/* Environment validation banner */}
               {showEnvBanner && envValidation && (!envValidation.isValid || envValidation.warnings.length > 0) && (
@@ -406,6 +462,38 @@ const App: React.FC = () => {
                     onClick={() => setActiveView("community")}
                   />
 
+                  {/* Workflow Progress */}
+                  <div className="px-4 py-4 mt-4 border-t border-gray-700/50">
+                    <p className="text-xs text-gray-500 mb-3 hidden md:block">Workflow</p>
+                    <WorkflowProgress
+                      steps={MUSIC_CREATION_STEPS}
+                      currentStep={getWorkflowStep()}
+                      completedSteps={completedSteps}
+                      onStepClick={(stepId) => {
+                        const stepToView: Record<string, View> = {
+                          compose: "create",
+                          produce: "produce",
+                          video: "video",
+                          market: "market",
+                        };
+                        const view = stepToView[stepId];
+                        if (view) setActiveView(view);
+                      }}
+                      orientation="vertical"
+                      size="sm"
+                      className="hidden md:block"
+                    />
+                    {/* Compact version for collapsed sidebar */}
+                    <WorkflowProgress
+                      steps={MUSIC_CREATION_STEPS}
+                      currentStep={getWorkflowStep()}
+                      completedSteps={completedSteps}
+                      orientation="vertical"
+                      size="sm"
+                      className="md:hidden"
+                    />
+                  </div>
+
                   {/* Theme Toggle at bottom */}
                   <div className="mt-auto px-4 py-4 border-t border-gray-700/50">
                     <div className="flex items-center justify-between">
@@ -435,6 +523,11 @@ const App: React.FC = () => {
                 />
 
                 <div className="p-4 md:p-6 lg:p-10 relative z-10 page-enter-active">
+                  {/* Breadcrumb navigation */}
+                  <Breadcrumb
+                    items={getBreadcrumbItems()}
+                    className="mb-4"
+                  />
                   {renderView()}
                 </div>
               </main>

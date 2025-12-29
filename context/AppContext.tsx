@@ -4,11 +4,20 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
   ReactNode,
 } from "react";
 
 // Types
 export type Theme = "dark" | "light";
+
+interface MusicState {
+  generatedLyrics: string;
+  songConcept: string;
+  instrumentalUrl: string;
+  vocalUrl: string;
+  currentView: string;
+}
 
 interface AppState {
   // Theme
@@ -30,6 +39,15 @@ interface AppState {
   currentStep: number;
   setCurrentStep: (step: number) => void;
   workflowSteps: WorkflowStep[];
+  completedSteps: string[];
+
+  // Session persistence
+  hasRestoredSession: boolean;
+  showRestorePrompt: boolean;
+  savedSessionTime: Date | null;
+  restoreSession: () => void;
+  dismissRestorePrompt: () => void;
+  clearSession: () => void;
 
   // Toast notifications
   toasts: Toast[];
@@ -59,6 +77,57 @@ const defaultWorkflowSteps: WorkflowStep[] = [
   { id: "market", name: "Marketing", completed: false },
 ];
 
+// Storage keys
+const MUSIC_STATE_KEY = "muse-music-state";
+const STORAGE_VERSION = 1;
+
+interface StoredMusicState {
+  state: MusicState;
+  timestamp: number;
+  version: number;
+}
+
+// Helper to load music state from localStorage
+function loadMusicState(): { state: MusicState; timestamp: Date } | null {
+  try {
+    const stored = localStorage.getItem(MUSIC_STATE_KEY);
+    if (!stored) return null;
+
+    const data: StoredMusicState = JSON.parse(stored);
+    if (data.version !== STORAGE_VERSION) return null;
+
+    // Check if any meaningful state exists
+    const hasContent =
+      data.state.generatedLyrics.length > 0 ||
+      data.state.songConcept.length > 0 ||
+      data.state.instrumentalUrl.length > 0 ||
+      data.state.vocalUrl.length > 0;
+
+    if (!hasContent) return null;
+
+    return {
+      state: data.state,
+      timestamp: new Date(data.timestamp),
+    };
+  } catch {
+    return null;
+  }
+}
+
+// Helper to save music state to localStorage
+function saveMusicState(state: MusicState): void {
+  try {
+    const data: StoredMusicState = {
+      state,
+      timestamp: Date.now(),
+      version: STORAGE_VERSION,
+    };
+    localStorage.setItem(MUSIC_STATE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.warn("Failed to save music state:", error);
+  }
+}
+
 // Create context
 const AppContext = createContext<AppState | undefined>(undefined);
 
@@ -85,6 +154,85 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [songConcept, setSongConcept] = useState<string>("");
   const [instrumentalUrl, setInstrumentalUrl] = useState<string>("");
   const [vocalUrl, setVocalUrl] = useState<string>("");
+
+  // Session persistence state
+  const [hasRestoredSession, setHasRestoredSession] = useState(false);
+  const [showRestorePrompt, setShowRestorePrompt] = useState(false);
+  const [savedSessionTime, setSavedSessionTime] = useState<Date | null>(null);
+  const [pendingRestore, setPendingRestore] = useState<MusicState | null>(null);
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitializedRef = useRef(false);
+
+  // Check for saved session on mount
+  useEffect(() => {
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
+
+    const saved = loadMusicState();
+    if (saved) {
+      setPendingRestore(saved.state);
+      setSavedSessionTime(saved.timestamp);
+      setShowRestorePrompt(true);
+    }
+  }, []);
+
+  // Debounced save effect - saves when state changes
+  useEffect(() => {
+    // Skip if not initialized or nothing to save
+    if (!isInitializedRef.current) return;
+    if (!generatedLyrics && !songConcept && !instrumentalUrl && !vocalUrl) return;
+
+    // Clear existing timer
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    // Debounce save by 1 second
+    saveTimerRef.current = setTimeout(() => {
+      saveMusicState({
+        generatedLyrics,
+        songConcept,
+        instrumentalUrl,
+        vocalUrl,
+        currentView: "",
+      });
+    }, 1000);
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [generatedLyrics, songConcept, instrumentalUrl, vocalUrl]);
+
+  // Session restore handlers
+  const restoreSession = useCallback(() => {
+    if (pendingRestore) {
+      setGeneratedLyrics(pendingRestore.generatedLyrics);
+      setSongConcept(pendingRestore.songConcept);
+      setInstrumentalUrl(pendingRestore.instrumentalUrl);
+      setVocalUrl(pendingRestore.vocalUrl);
+      setHasRestoredSession(true);
+    }
+    setShowRestorePrompt(false);
+    setPendingRestore(null);
+  }, [pendingRestore]);
+
+  const dismissRestorePrompt = useCallback(() => {
+    setShowRestorePrompt(false);
+    setPendingRestore(null);
+    // Clear the stored session since user dismissed it
+    localStorage.removeItem(MUSIC_STATE_KEY);
+  }, []);
+
+  const clearSession = useCallback(() => {
+    localStorage.removeItem(MUSIC_STATE_KEY);
+    setGeneratedLyrics("");
+    setSongConcept("");
+    setInstrumentalUrl("");
+    setVocalUrl("");
+    setHasRestoredSession(false);
+  }, []);
 
   // Workflow state
   const [currentStep, setCurrentStep] = useState<number>(0);
@@ -150,6 +298,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     );
   }, [generatedLyrics, instrumentalUrl, vocalUrl]);
 
+  // Compute completed steps array
+  const completedSteps = workflowSteps
+    .filter((step) => step.completed)
+    .map((step) => step.id);
+
   const value: AppState = {
     theme,
     setTheme,
@@ -165,6 +318,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     currentStep,
     setCurrentStep,
     workflowSteps,
+    completedSteps,
+    hasRestoredSession,
+    showRestorePrompt,
+    savedSessionTime,
+    restoreSession,
+    dismissRestorePrompt,
+    clearSession,
     toasts,
     addToast,
     removeToast,
@@ -194,8 +354,27 @@ export const useToast = () => {
 };
 
 export const useWorkflow = () => {
-  const { currentStep, setCurrentStep, workflowSteps } = useApp();
-  return { currentStep, setCurrentStep, workflowSteps };
+  const { currentStep, setCurrentStep, workflowSteps, completedSteps } = useApp();
+  return { currentStep, setCurrentStep, workflowSteps, completedSteps };
+};
+
+export const useSessionRestore = () => {
+  const {
+    showRestorePrompt,
+    savedSessionTime,
+    restoreSession,
+    dismissRestorePrompt,
+    clearSession,
+    hasRestoredSession,
+  } = useApp();
+  return {
+    showRestorePrompt,
+    savedSessionTime,
+    restoreSession,
+    dismissRestorePrompt,
+    clearSession,
+    hasRestoredSession,
+  };
 };
 
 export const useMusicState = () => {

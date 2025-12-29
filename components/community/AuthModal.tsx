@@ -1,7 +1,14 @@
-import React, { useState, useId } from "react";
+import React, { useState, useId, useMemo } from "react";
 import Button from "../ui/Button";
+import FormField from "../ui/FormField";
 import { useAuth } from "../../context/AuthContext";
 import { useModal } from "../../hooks/useModal";
+import {
+  validateEmail,
+  validatePassword,
+  validateUsername,
+  getPasswordStrength,
+} from "../../utils/validation";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -22,11 +29,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   // Generate unique IDs for form fields
   const formId = useId();
-  const usernameId = `${formId}-username`;
-  const emailId = `${formId}-email`;
-  const passwordId = `${formId}-password`;
-  const passwordHintId = `${formId}-password-hint`;
   const errorId = `${formId}-error`;
+
+  // Password strength for signup
+  const passwordStrength = useMemo(() => {
+    if (mode !== "signup" || !password) return null;
+    return getPasswordStrength(password);
+  }, [password, mode]);
+
+  const strengthColors = {
+    Weak: "bg-red-500",
+    Fair: "bg-orange-500",
+    Good: "bg-yellow-500",
+    Strong: "bg-green-500",
+    "Very Strong": "bg-emerald-500",
+  };
 
   // Use modal accessibility hook
   const { modalRef, overlayProps, contentProps, closeButtonProps, titleProps } = useModal({
@@ -177,68 +194,69 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "signup" && (
-            <div>
-              <label
-                htmlFor={usernameId}
-                className="block text-sm font-medium text-gray-300 mb-2"
-              >
-                Username
-              </label>
-              <input
-                id={usernameId}
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-gray-700/50 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Choose a unique username"
-                required={mode === "signup"}
-                autoComplete="username"
-              />
-            </div>
+            <FormField
+              label="Username"
+              type="text"
+              value={username}
+              onChange={setUsername}
+              placeholder="Choose a unique username"
+              required
+              validator={(v) => validateUsername(v)}
+              validateOnBlur
+              autoComplete="username"
+            />
           )}
 
-          <div>
-            <label
-              htmlFor={emailId}
-              className="block text-sm font-medium text-gray-300 mb-2"
-            >
-              Email
-            </label>
-            <input
-              id={emailId}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-gray-700/50 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="your@email.com"
-              required
-              autoComplete="email"
-            />
-          </div>
+          <FormField
+            label="Email"
+            type="email"
+            value={email}
+            onChange={setEmail}
+            placeholder="your@email.com"
+            required
+            validator={(v) => validateEmail(v)}
+            validateOnBlur
+            autoComplete="email"
+          />
 
           <div>
-            <label
-              htmlFor={passwordId}
-              className="block text-sm font-medium text-gray-300 mb-2"
-            >
-              Password
-            </label>
-            <input
-              id={passwordId}
+            <FormField
+              label="Password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-gray-700/50 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="••••••••"
+              onChange={setPassword}
+              placeholder="Enter your password"
               required
-              minLength={6}
-              aria-describedby={mode === "signup" ? passwordHintId : undefined}
+              validator={(v) => validatePassword(v, 6)}
+              validateOnBlur
+              showPasswordToggle
+              helpText={mode === "signup" ? "Password must be at least 6 characters" : undefined}
               autoComplete={mode === "signin" ? "current-password" : "new-password"}
             />
-            {mode === "signup" && (
-              <p id={passwordHintId} className="mt-1 text-xs text-gray-500">
-                Password must be at least 6 characters
-              </p>
+
+            {/* Password Strength Meter */}
+            {mode === "signup" && passwordStrength && (
+              <div className="mt-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${strengthColors[passwordStrength.label]}`}
+                      style={{ width: `${(passwordStrength.score / 4) * 100}%` }}
+                    />
+                  </div>
+                  <span className={`text-xs font-medium ${
+                    passwordStrength.score >= 3 ? "text-green-400" :
+                    passwordStrength.score >= 2 ? "text-yellow-400" : "text-red-400"
+                  }`}>
+                    {passwordStrength.label}
+                  </span>
+                </div>
+                {passwordStrength.suggestions.length > 0 && passwordStrength.score < 3 && (
+                  <p className="text-xs text-gray-500">
+                    Tip: {passwordStrength.suggestions[0]}
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
