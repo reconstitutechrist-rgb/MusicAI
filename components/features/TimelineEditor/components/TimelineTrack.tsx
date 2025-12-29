@@ -2,6 +2,7 @@ import React, { useRef, useCallback, useState, useEffect } from "react";
 import { useTimeline } from "../TimelineEditorContext";
 import { TimelineClip } from "./TimelineClip";
 import { CrossfadeZone } from "./CrossfadeZone";
+import { useTheme } from "../../../../context/AppContext";
 
 interface TimelineTrackProps {
   width: number;
@@ -13,6 +14,8 @@ interface TimelineTrackProps {
  * Renders all clips and crossfade zones
  */
 export function TimelineTrack({ width, height = 100 }: TimelineTrackProps) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const containerRef = useRef<HTMLDivElement>(null);
   const { state, actions } = useTimeline();
   const { clips, crossfades, zoom, scrollPosition, currentTime, isPlaying } =
@@ -117,7 +120,7 @@ export function TimelineTrack({ width, height = 100 }: TimelineTrackProps) {
   return (
     <div
       ref={containerRef}
-      className="relative bg-gray-900/50 border-y border-white/10"
+      className={`relative border-y ${isDark ? 'bg-gray-900/50 border-white/10' : 'bg-gray-100 border-gray-200'}`}
       style={{ height: `${height}px`, width: `${width}px`, overflow: "hidden" }}
       onMouseMove={dragState ? handleMouseMove : undefined}
       onMouseUp={handleDragEnd}
@@ -148,8 +151,8 @@ export function TimelineTrack({ width, height = 100 }: TimelineTrackProps) {
                 y2={height}
                 stroke={
                   i % 5 === 0
-                    ? "rgba(255,255,255,0.1)"
-                    : "rgba(255,255,255,0.05)"
+                    ? isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"
+                    : isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"
                 }
                 strokeWidth={1}
               />
@@ -200,7 +203,7 @@ export function TimelineTrack({ width, height = 100 }: TimelineTrackProps) {
 
       {/* Empty state */}
       {clips.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center text-white/40">
+        <div className={`absolute inset-0 flex items-center justify-center ${isDark ? 'text-white/40' : 'text-gray-500'}`}>
           <div className="text-center">
             <p className="text-lg">Drop songs here or add from the library</p>
             <p className="text-sm mt-1">

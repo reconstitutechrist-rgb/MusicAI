@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { useTheme } from "../../context/AppContext";
 import { AudioAnalysisResult } from "../../types";
 
 interface MasteringAssistantProps {
@@ -236,6 +237,30 @@ const MasteringAssistant: React.FC<MasteringAssistantProps> = ({
   onApplySettings,
   isAnalyzing = false,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  // Re-destructure to continue existing logic
+  return (
+    <MasteringAssistantInner
+      audioAnalysis={audioAnalysis}
+      onApplySettings={onApplySettings}
+      isAnalyzing={isAnalyzing}
+      isDark={isDark}
+    />
+  );
+};
+
+interface MasteringAssistantInnerProps extends MasteringAssistantProps {
+  isDark: boolean;
+}
+
+const MasteringAssistantInner: React.FC<MasteringAssistantInnerProps> = ({
+  audioAnalysis,
+  onApplySettings,
+  isAnalyzing = false,
+  isDark,
+}) => {
   const [suggestions, setSuggestions] = useState<MasteringSuggestions | null>(
     null,
   );
@@ -315,7 +340,7 @@ const MasteringAssistant: React.FC<MasteringAssistantProps> = ({
 
   if (isAnalyzing) {
     return (
-      <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+      <div className={`${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'} rounded-lg p-4 border`}>
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
           <span className="text-gray-300">
@@ -328,7 +353,7 @@ const MasteringAssistant: React.FC<MasteringAssistantProps> = ({
 
   if (!audioAnalysis) {
     return (
-      <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+      <div className={`${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'} rounded-lg p-4 border`}>
         <div className="text-center text-gray-400">
           <svg
             className="w-12 h-12 mx-auto mb-3 text-gray-600"
@@ -353,7 +378,7 @@ const MasteringAssistant: React.FC<MasteringAssistantProps> = ({
   }
 
   return (
-    <div className="bg-gray-800/50 rounded-lg border border-gray-700 overflow-hidden">
+    <div className={`${isDark ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'} rounded-lg border overflow-hidden`}>
       {/* Header */}
       <div className="p-4 border-b border-gray-700 bg-gradient-to-r from-purple-900/30 to-indigo-900/30">
         <div className="flex items-center justify-between">
@@ -413,25 +438,25 @@ const MasteringAssistant: React.FC<MasteringAssistantProps> = ({
 
           {/* Quick Summary */}
           <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4 border-b border-gray-700">
-            <div className="text-center p-3 bg-gray-900/50 rounded-lg">
+            <div className={`text-center p-3 rounded-lg ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}>
               <p className="text-xs text-gray-500 uppercase">Target LUFS</p>
               <p className="text-xl font-bold text-green-400">
                 {suggestions.targetLufs}
               </p>
             </div>
-            <div className="text-center p-3 bg-gray-900/50 rounded-lg">
+            <div className={`text-center p-3 rounded-lg ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}>
               <p className="text-xs text-gray-500 uppercase">True Peak</p>
               <p className="text-xl font-bold text-yellow-400">
                 {suggestions.truePeakLimit} dB
               </p>
             </div>
-            <div className="text-center p-3 bg-gray-900/50 rounded-lg">
+            <div className={`text-center p-3 rounded-lg ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}>
               <p className="text-xs text-gray-500 uppercase">Comp Ratio</p>
               <p className="text-xl font-bold text-blue-400">
                 {suggestions.compression.ratio}:1
               </p>
             </div>
-            <div className="text-center p-3 bg-gray-900/50 rounded-lg">
+            <div className={`text-center p-3 rounded-lg ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}>
               <p className="text-xs text-gray-500 uppercase">Stereo Width</p>
               <p className="text-xl font-bold text-indigo-400">
                 {(suggestions.stereoWidth * 100).toFixed(0)}%
@@ -464,7 +489,7 @@ const MasteringAssistant: React.FC<MasteringAssistantProps> = ({
             </button>
 
             {showDetails && (
-              <div className="p-4 space-y-4 bg-gray-900/30">
+              <div className={`p-4 space-y-4 ${isDark ? 'bg-gray-900/30' : 'bg-gray-50'}`}>
                 {/* EQ Settings */}
                 <div>
                   <h5 className="text-xs font-bold text-gray-400 uppercase mb-2">
@@ -479,7 +504,7 @@ const MasteringAssistant: React.FC<MasteringAssistantProps> = ({
                     ).map(([band, settings]) => (
                       <div
                         key={band}
-                        className="bg-gray-800 p-2 rounded text-center"
+                        className={`${isDark ? 'bg-gray-800' : 'bg-gray-100'} p-2 rounded text-center`}
                       >
                         <p className="text-gray-500 capitalize">
                           {band.replace(/([A-Z])/g, " $1").trim()}
@@ -504,31 +529,31 @@ const MasteringAssistant: React.FC<MasteringAssistantProps> = ({
                     Compression Settings
                   </h5>
                   <div className="grid grid-cols-5 gap-2 text-xs">
-                    <div className="bg-gray-800 p-2 rounded text-center">
+                    <div className={`${isDark ? 'bg-gray-800' : 'bg-gray-100'} p-2 rounded text-center`}>
                       <p className="text-gray-500">Threshold</p>
                       <p className="text-white font-bold">
                         {suggestions.compression.threshold}dB
                       </p>
                     </div>
-                    <div className="bg-gray-800 p-2 rounded text-center">
+                    <div className={`${isDark ? 'bg-gray-800' : 'bg-gray-100'} p-2 rounded text-center`}>
                       <p className="text-gray-500">Ratio</p>
                       <p className="text-white font-bold">
                         {suggestions.compression.ratio}:1
                       </p>
                     </div>
-                    <div className="bg-gray-800 p-2 rounded text-center">
+                    <div className={`${isDark ? 'bg-gray-800' : 'bg-gray-100'} p-2 rounded text-center`}>
                       <p className="text-gray-500">Attack</p>
                       <p className="text-white font-bold">
                         {suggestions.compression.attack * 1000}ms
                       </p>
                     </div>
-                    <div className="bg-gray-800 p-2 rounded text-center">
+                    <div className={`${isDark ? 'bg-gray-800' : 'bg-gray-100'} p-2 rounded text-center`}>
                       <p className="text-gray-500">Release</p>
                       <p className="text-white font-bold">
                         {suggestions.compression.release * 1000}ms
                       </p>
                     </div>
-                    <div className="bg-gray-800 p-2 rounded text-center">
+                    <div className={`${isDark ? 'bg-gray-800' : 'bg-gray-100'} p-2 rounded text-center`}>
                       <p className="text-gray-500">Makeup</p>
                       <p className="text-white font-bold">
                         +{suggestions.compression.makeupGain}dB
@@ -560,7 +585,7 @@ const MasteringAssistant: React.FC<MasteringAssistantProps> = ({
             </button>
             <button
               onClick={generateSuggestions}
-              className="px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300 transition-colors"
+              className={`px-4 py-3 rounded-lg transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
             >
               Regenerate
             </button>

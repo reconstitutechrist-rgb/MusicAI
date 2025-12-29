@@ -4,6 +4,7 @@
  */
 
 import React from "react";
+import { useTheme } from "../../../context/AppContext";
 import Page from "../../ui/Page";
 import Card from "../../ui/Card";
 import { StemBlenderProvider } from "./StemBlenderProvider";
@@ -18,6 +19,9 @@ interface StemBlenderProps {
 }
 
 const StemBlenderContent: React.FC = () => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   return (
     <Page
       title="Stem Blender"
@@ -43,7 +47,7 @@ const StemBlenderContent: React.FC = () => {
             <span className="text-xl">🎵</span>
             <div>
               <p className="font-medium">Similar BPM</p>
-              <p className="text-gray-400">
+              <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
                 Mix stems from songs with similar tempos for tighter blends
               </p>
             </div>
@@ -52,7 +56,7 @@ const StemBlenderContent: React.FC = () => {
             <span className="text-xl">🎹</span>
             <div>
               <p className="font-medium">Compatible Keys</p>
-              <p className="text-gray-400">
+              <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
                 Songs in the same or relative keys blend more harmoniously
               </p>
             </div>
@@ -61,7 +65,7 @@ const StemBlenderContent: React.FC = () => {
             <span className="text-xl">🎚️</span>
             <div>
               <p className="font-medium">Balance Levels</p>
-              <p className="text-gray-400">
+              <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
                 Adjust volumes to ensure no single stem overpowers the mix
               </p>
             </div>
@@ -70,7 +74,7 @@ const StemBlenderContent: React.FC = () => {
             <span className="text-xl">⏱️</span>
             <div>
               <p className="font-medium">Use Offsets</p>
-              <p className="text-gray-400">
+              <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
                 Align track starts using the offset control for perfect sync
               </p>
             </div>

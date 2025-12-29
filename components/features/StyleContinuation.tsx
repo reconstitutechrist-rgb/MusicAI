@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from "react";
+import { useTheme } from "../../context/AppContext";
 import Page from "../ui/Page";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
@@ -28,6 +29,9 @@ interface StyleContinuationProps {
 const StyleContinuation: React.FC<StyleContinuationProps> = ({
   onSendToTimeline,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   // Input state
   const [introFile, setIntroFile] = useState<File | null>(null);
   const [introUrl, setIntroUrl] = useState<string | null>(null);
@@ -230,11 +234,11 @@ const StyleContinuation: React.FC<StyleContinuationProps> = ({
 
     return (
       <div className="mb-6">
-        <div className="flex justify-between text-sm text-gray-400 mb-2">
+        <div className={`flex justify-between text-sm mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
           <span>{stageLabels[progress.stage] || progress.stage}</span>
           <span>{Math.round(progress.progress)}%</span>
         </div>
-        <div className="w-full bg-gray-700 rounded-full h-2">
+        <div className={`w-full rounded-full h-2 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
           <div
             className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
             style={{ width: `${progress.progress}%` }}
@@ -326,7 +330,7 @@ const StyleContinuation: React.FC<StyleContinuationProps> = ({
             </div>
 
             {introUrl && (
-              <div className="mt-4 bg-gray-900/50 p-4 rounded-lg">
+              <div className={`mt-4 ${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} p-4 rounded-lg`}>
                 <p className="text-xs text-gray-400 mb-2">Intro Preview</p>
                 <WaveformPlayer audioUrl={introUrl} />
               </div>
@@ -338,21 +342,21 @@ const StyleContinuation: React.FC<StyleContinuationProps> = ({
             <Card>
               <h3 className="text-lg font-semibold mb-3">Intro Analysis</h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="bg-gray-900/50 p-3 rounded">
+                <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} p-3 rounded`}>
                   <p className="text-gray-400 text-xs">BPM</p>
                   <p className="text-xl font-bold">{Math.round(analysis.bpm)}</p>
                 </div>
-                <div className="bg-gray-900/50 p-3 rounded">
+                <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} p-3 rounded`}>
                   <p className="text-gray-400 text-xs">Key</p>
                   <p className="text-xl font-bold">{analysis.key}</p>
                 </div>
-                <div className="bg-gray-900/50 p-3 rounded">
+                <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} p-3 rounded`}>
                   <p className="text-gray-400 text-xs">Detected Genre</p>
                   <p className="font-medium">
                     {analysis.genres[0]?.name || "Unknown"}
                   </p>
                 </div>
-                <div className="bg-gray-900/50 p-3 rounded">
+                <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} p-3 rounded`}>
                   <p className="text-gray-400 text-xs">Mood</p>
                   <p className="font-medium">
                     {analysis.moods[0]?.name || "Neutral"}
@@ -379,7 +383,7 @@ const StyleContinuation: React.FC<StyleContinuationProps> = ({
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                       targetGenre === genre.id
                         ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-                        : "bg-gray-800 hover:bg-gray-700 text-gray-300"
+                        : isDark ? "bg-gray-800 hover:bg-gray-700 text-gray-300" : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                     }`}
                     title={genre.description}
                   >
@@ -400,7 +404,7 @@ const StyleContinuation: React.FC<StyleContinuationProps> = ({
                 max={30}
                 value={continuationDuration}
                 onChange={(e) => setContinuationDuration(Number(e.target.value))}
-                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}
               />
               <div className="flex justify-between text-xs text-gray-500 mt-1">
                 <span>5s</span>
@@ -442,7 +446,7 @@ const StyleContinuation: React.FC<StyleContinuationProps> = ({
                       className={`px-3 py-1 rounded text-sm capitalize ${
                         crossfadePreference === opt
                           ? "bg-purple-500 text-white"
-                          : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                          : isDark ? "bg-gray-800 text-gray-400 hover:bg-gray-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
                     >
                       {opt}
@@ -461,7 +465,7 @@ const StyleContinuation: React.FC<StyleContinuationProps> = ({
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
                 placeholder="Add specific style instructions, e.g., 'heavy distorted guitars, fast tempo'"
-                className="w-full bg-gray-900 border border-gray-600 rounded-md p-3 text-sm focus:ring-purple-500 focus:border-purple-500"
+                className={`w-full border rounded-md p-3 text-sm focus:ring-purple-500 focus:border-purple-500 ${isDark ? 'bg-gray-900 border-gray-600' : 'bg-white border-gray-300'}`}
                 rows={2}
               />
             </div>
@@ -533,7 +537,7 @@ const StyleContinuation: React.FC<StyleContinuationProps> = ({
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       activePreview === tab
                         ? "bg-purple-500 text-white"
-                        : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                        : isDark ? "bg-gray-800 text-gray-400 hover:bg-gray-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
                     {tab === "intro"
@@ -546,23 +550,23 @@ const StyleContinuation: React.FC<StyleContinuationProps> = ({
               </div>
 
               {/* Waveform Player */}
-              <div className="bg-gray-900/50 p-4 rounded-lg mb-4">
+              <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} p-4 rounded-lg mb-4`}>
                 <WaveformPlayer audioUrl={getPreviewUrl() || ""} />
               </div>
 
               {/* Info */}
               <div className="grid grid-cols-3 gap-4 mb-6 text-sm">
-                <div className="bg-gray-900/50 p-3 rounded text-center">
+                <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} p-3 rounded text-center`}>
                   <p className="text-gray-400 text-xs">Genre Transition</p>
                   <p className="font-medium">
                     {analysis?.genres[0]?.name || "?"} → {targetGenre}
                   </p>
                 </div>
-                <div className="bg-gray-900/50 p-3 rounded text-center">
+                <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} p-3 rounded text-center`}>
                   <p className="text-gray-400 text-xs">Crossfade</p>
                   <p className="font-medium">{result.crossfadeDuration.toFixed(1)}s</p>
                 </div>
-                <div className="bg-gray-900/50 p-3 rounded text-center">
+                <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} p-3 rounded text-center`}>
                   <p className="text-gray-400 text-xs">Total Duration</p>
                   <p className="font-medium">
                     {(

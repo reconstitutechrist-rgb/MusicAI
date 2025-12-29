@@ -1,5 +1,6 @@
 import React, { useCallback } from "react";
 import { useTimeline } from "../TimelineEditorContext";
+import { useTheme } from "../../../../context/AppContext";
 
 interface TransportControlsProps {
   className?: string;
@@ -10,6 +11,8 @@ interface TransportControlsProps {
  * Also includes zoom controls and current time display
  */
 export function TransportControls({ className = "" }: TransportControlsProps) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const { state, actions } = useTimeline();
   const { currentTime, duration, isPlaying, zoom } = state;
 
@@ -59,14 +62,14 @@ export function TransportControls({ className = "" }: TransportControlsProps) {
 
   return (
     <div
-      className={`flex items-center gap-4 px-4 py-2 bg-gray-900/80 border-b border-white/10 ${className}`}
+      className={`flex items-center gap-4 px-4 py-2 border-b ${isDark ? 'bg-gray-900/80 border-white/10' : 'bg-gray-100 border-gray-200'} ${className}`}
     >
       {/* Playback controls */}
       <div className="flex items-center gap-2">
         {/* Stop */}
         <button
           onClick={actions.stop}
-          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/80 hover:text-white"
+          className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-white/80 hover:text-white' : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'}`}
           aria-label="Stop"
           title="Stop (and return to start)"
         >
@@ -83,7 +86,7 @@ export function TransportControls({ className = "" }: TransportControlsProps) {
         {/* Skip backward */}
         <button
           onClick={handleSkipBackward}
-          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/80 hover:text-white"
+          className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-white/80 hover:text-white' : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'}`}
           aria-label="Skip backward 5 seconds"
           title="Skip backward 5 seconds"
         >
@@ -133,7 +136,7 @@ export function TransportControls({ className = "" }: TransportControlsProps) {
         {/* Skip forward */}
         <button
           onClick={handleSkipForward}
-          className="p-2 rounded-lg hover:bg-white/10 transition-colors text-white/80 hover:text-white"
+          className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-white/80 hover:text-white' : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'}`}
           aria-label="Skip forward 5 seconds"
           title="Skip forward 5 seconds"
         >
@@ -150,9 +153,9 @@ export function TransportControls({ className = "" }: TransportControlsProps) {
 
       {/* Time display */}
       <div className="flex items-center gap-2 font-mono text-sm">
-        <span className="text-white">{formatTime(currentTime)}</span>
-        <span className="text-white/40">/</span>
-        <span className="text-white/60">{formatTime(duration)}</span>
+        <span className={isDark ? 'text-white' : 'text-gray-900'}>{formatTime(currentTime)}</span>
+        <span className={isDark ? 'text-white/40' : 'text-gray-400'}>/</span>
+        <span className={isDark ? 'text-white/60' : 'text-gray-600'}>{formatTime(duration)}</span>
       </div>
 
       {/* Spacer */}
@@ -162,7 +165,7 @@ export function TransportControls({ className = "" }: TransportControlsProps) {
       <div className="flex items-center gap-2">
         <button
           onClick={handleZoomOut}
-          className="p-1.5 rounded hover:bg-white/10 transition-colors text-white/60 hover:text-white"
+          className={`p-1.5 rounded transition-colors ${isDark ? 'hover:bg-white/10 text-white/60 hover:text-white' : 'hover:bg-gray-200 text-gray-500 hover:text-gray-900'}`}
           aria-label="Zoom out"
           title="Zoom out"
         >
@@ -180,13 +183,13 @@ export function TransportControls({ className = "" }: TransportControlsProps) {
           </svg>
         </button>
 
-        <span className="text-white/60 text-sm min-w-[4rem] text-center">
+        <span className={`text-sm min-w-[4rem] text-center ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
           {(zoom * 100).toFixed(0)}%
         </span>
 
         <button
           onClick={handleZoomIn}
-          className="p-1.5 rounded hover:bg-white/10 transition-colors text-white/60 hover:text-white"
+          className={`p-1.5 rounded transition-colors ${isDark ? 'hover:bg-white/10 text-white/60 hover:text-white' : 'hover:bg-gray-200 text-gray-500 hover:text-gray-900'}`}
           aria-label="Zoom in"
           title="Zoom in"
         >
@@ -206,7 +209,7 @@ export function TransportControls({ className = "" }: TransportControlsProps) {
 
         <button
           onClick={handleZoomFit}
-          className="px-2 py-1 rounded hover:bg-white/10 transition-colors text-white/60 hover:text-white text-sm"
+          className={`px-2 py-1 rounded transition-colors text-sm ${isDark ? 'hover:bg-white/10 text-white/60 hover:text-white' : 'hover:bg-gray-200 text-gray-500 hover:text-gray-900'}`}
           aria-label="Fit to view"
           title="Fit to view"
         >

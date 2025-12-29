@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useTheme } from "../../context/AppContext";
 import Page from "../ui/Page";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
@@ -329,6 +330,9 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
   karaokeSongs = [],
   initialKaraokeMode = false,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -2469,16 +2473,16 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
     setEQBands: (bands: EQBand[]) => void;
     trackName: string;
   }) => (
-    <div className="bg-gray-800 p-4 rounded-md mt-2 space-y-4 border border-gray-700 animate-in fade-in slide-in-from-top-2 duration-200">
+    <div className={`p-4 rounded-md mt-2 space-y-4 border animate-in fade-in slide-in-from-top-2 duration-200 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200 shadow-sm'}`}>
       {/* EQ Mode Toggle */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-gray-400 font-medium">Equalizer</span>
+        <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Equalizer</span>
         <button
           onClick={() => setUseAdvancedEQ(!useAdvancedEQ)}
           className={`text-xs px-2 py-1 rounded transition-colors ${
             useAdvancedEQ
               ? "bg-purple-600/30 text-purple-400 border border-purple-500/50"
-              : "bg-gray-700 text-gray-400 border border-gray-600"
+              : isDark ? "bg-gray-700 text-gray-400 border border-gray-600" : "bg-gray-100 text-gray-600 border border-gray-300"
           }`}
         >
           {useAdvancedEQ ? "Advanced (5-band)" : "Simple (3-band)"}
@@ -2490,7 +2494,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
       ) : (
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="text-xs text-gray-400 block mb-1">Low (EQ)</label>
+            <label className={`text-xs block mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Low (EQ)</label>
             <input
               type="range"
               min="-10"
@@ -2506,7 +2510,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
             </div>
           </div>
           <div>
-            <label className="text-xs text-gray-400 block mb-1">Mid (EQ)</label>
+            <label className={`text-xs block mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Mid (EQ)</label>
             <input
               type="range"
               min="-10"
@@ -2522,7 +2526,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
             </div>
           </div>
           <div>
-            <label className="text-xs text-gray-400 block mb-1">
+            <label className={`text-xs block mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               High (EQ)
             </label>
             <input
@@ -2542,7 +2546,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 border-t border-gray-700 pt-3">
+      <div className={`grid grid-cols-2 gap-4 border-t pt-3 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
         <div>
           <label className="text-xs text-indigo-300 block mb-1 font-bold">
             Reverb Mix
@@ -2777,7 +2781,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                 <textarea
                   value={editedLyrics}
                   onChange={(e) => setEditedLyrics(e.target.value)}
-                  className="w-full h-80 bg-gray-900 border border-gray-600 rounded-md p-3 text-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className={`w-full h-80 border rounded-md p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${isDark ? 'bg-gray-900 border-gray-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'}`}
                   placeholder="Enter your lyrics..."
                 />
                 <div className="space-y-2">
@@ -2865,7 +2869,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                 <select
                   value={currentPresetId || ""}
                   onChange={(e) => e.target.value && loadPreset(e.target.value)}
-                  className="flex-1 bg-gray-900 border border-gray-600 rounded-md text-sm py-1.5 px-2 text-gray-200"
+                  className={`flex-1 border rounded-md text-sm py-1.5 px-2 ${isDark ? 'bg-gray-900 border-gray-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'}`}
                 >
                   {!currentPresetId && (
                     <option value="">Custom Settings</option>
@@ -2907,16 +2911,16 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                   )}
                 <button
                   onClick={() => setShowPresetManager(true)}
-                  className="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-md transition-colors"
+                  className={`px-3 py-1.5 text-xs rounded-md transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
                   title="Manage presets"
                 >
                   Manage
                 </button>
-                <div className="border-l border-gray-600 h-6 mx-1" />
+                <div className={`border-l h-6 mx-1 ${isDark ? 'border-gray-600' : 'border-gray-300'}`} />
                 <button
                   onClick={undo}
                   disabled={historyPast.length === 0}
-                  className="px-2 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className={`px-2 py-1.5 text-xs rounded-md transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} disabled:opacity-40 disabled:cursor-not-allowed`}
                   title="Undo (Ctrl+Z)"
                 >
                   <svg
@@ -2936,7 +2940,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                 <button
                   onClick={redo}
                   disabled={historyFuture.length === 0}
-                  className="px-2 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className={`px-2 py-1.5 text-xs rounded-md transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'} disabled:opacity-40 disabled:cursor-not-allowed`}
                   title="Redo (Ctrl+Y)"
                 >
                   <svg
@@ -2962,8 +2966,8 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
               </div>
 
               {!currentInstrumentalUrl && (
-                <div className="bg-gray-900/50 p-4 rounded-lg border border-dashed border-gray-600 mb-4 text-center">
-                  <p className="text-gray-400 text-sm mb-2">
+                <div className={`p-4 rounded-lg border border-dashed mb-4 text-center ${isDark ? 'bg-gray-900/50 border-gray-600' : 'bg-gray-50 border-gray-300'}`}>
+                  <p className={`text-sm mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     No instrumental track found. Upload one to start mixing.
                   </p>
                   <input
@@ -2977,10 +2981,10 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
 
               <div className="flex flex-col gap-4">
                 {/* Instrumental Track */}
-                <div className="bg-gray-900/50 p-3 rounded-lg">
+                <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
                   <div className="flex items-center gap-4">
-                    <div className="w-24 text-sm font-bold text-gray-400">
-                      Instrumental
+                    <div className={`w-24 text-sm font-bold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+Instrumental
                     </div>
                     {currentInstrumentalUrl ? (
                       <input
@@ -3003,10 +3007,10 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                 </div>
 
                 {/* Lead Vocal Track */}
-                <div className="bg-gray-900/50 p-3 rounded-lg">
+                <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
                   <div className="flex items-center gap-4">
-                    <div className="w-24 text-sm font-bold text-gray-400">
-                      Lead Vocal
+                    <div className={`w-24 text-sm font-bold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+Lead Vocal
                     </div>
                     <input
                       type="range"
@@ -3065,10 +3069,10 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                 </div>
 
                 {/* Harmony Track */}
-                <div className="bg-gray-900/50 p-3 rounded-lg">
+                <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-900/50' : 'bg-gray-50'}`}>
                   <div className="flex items-center gap-4">
-                    <div className="w-24 text-sm font-bold text-gray-400">
-                      Harmony
+                    <div className={`w-24 text-sm font-bold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+Harmony
                     </div>
                     {harmonyAudioUrl ? (
                       <>
@@ -3172,13 +3176,13 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                 </div>
 
                 {/* A/B Comparison Toggle */}
-                <div className="mt-3 pt-3 border-t border-gray-700">
+                <div className={`mt-3 pt-3 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                   <button
                     onClick={() => setBypassAllFX(!bypassAllFX)}
                     className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                       bypassAllFX
                         ? "bg-yellow-500/20 border border-yellow-500 text-yellow-400"
-                        : "bg-gray-800 border border-gray-600 text-gray-400 hover:bg-gray-700"
+                        : isDark ? "bg-gray-800 border border-gray-600 text-gray-400 hover:bg-gray-700" : "bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200"
                     }`}
                     title="Press 'B' to toggle"
                   >
@@ -3208,13 +3212,13 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                 </div>
 
                 {/* Pro Metering Section */}
-                <div className="mt-3 pt-3 border-t border-gray-700">
+                <div className={`mt-3 pt-3 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                   <button
                     onClick={() => setShowProMetering(!showProMetering)}
                     className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                       showProMetering
                         ? "bg-indigo-500/20 border border-indigo-500 text-indigo-300"
-                        : "bg-gray-800 border border-gray-600 text-gray-400 hover:bg-gray-700"
+                        : isDark ? "bg-gray-800 border border-gray-600 text-gray-400 hover:bg-gray-700" : "bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
                     <svg
@@ -3243,7 +3247,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                     className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                       showAutomation
                         ? "bg-emerald-500/20 border border-emerald-500 text-emerald-300"
-                        : "bg-gray-800 border border-gray-600 text-gray-400 hover:bg-gray-700"
+                        : isDark ? "bg-gray-800 border border-gray-600 text-gray-400 hover:bg-gray-700" : "bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
                     <svg
@@ -3270,7 +3274,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
 
                 {/* Automation Panel */}
                 {showAutomation && (
-                  <div className="mt-3 p-4 bg-gray-900/50 rounded-lg border border-gray-700 space-y-4">
+                  <div className={`mt-3 p-4 rounded-lg border space-y-4 ${isDark ? 'bg-gray-900/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-sm font-bold text-emerald-300 uppercase tracking-wider">
                         Parameter Automation
@@ -3283,7 +3287,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                           className={`px-2 py-1 text-xs rounded ${
                             automationEnabled
                               ? "bg-emerald-600 text-white"
-                              : "bg-gray-700 text-gray-400"
+                              : isDark ? "bg-gray-700 text-gray-400" : "bg-gray-100 text-gray-600"
                           }`}
                         >
                           {automationEnabled ? "ON" : "OFF"}
@@ -3294,7 +3298,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                     {/* Add Lane Dropdown */}
                     <div className="flex items-center gap-2">
                       <select
-                        className="flex-1 bg-gray-800 border border-gray-600 rounded-md py-1.5 px-3 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className={`flex-1 ${isDark ? 'bg-gray-800 border-gray-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'} border rounded-md py-1.5 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500`}
                         onChange={(e) => {
                           if (e.target.value) {
                             addAutomationLane(
@@ -3352,7 +3356,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                     </div>
 
                     {/* Playback Info */}
-                    <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-700">
+                    <div className={`flex items-center justify-between text-xs pt-2 border-t ${isDark ? 'text-gray-500 border-gray-700' : 'text-gray-400 border-gray-200'}`}>
                       <span>
                         Time: {currentPlaybackTime.toFixed(1)}s /{" "}
                         {trackDuration.toFixed(1)}s
@@ -3369,7 +3373,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                     className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                       showSidechain
                         ? "bg-orange-500/20 border border-orange-500 text-orange-300"
-                        : "bg-gray-800 border border-gray-600 text-gray-400 hover:bg-gray-700"
+                        : isDark ? "bg-gray-800 border border-gray-600 text-gray-400 hover:bg-gray-700" : "bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
                     <svg
@@ -3396,7 +3400,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
 
                 {/* Sidechain Panel */}
                 {showSidechain && (
-                  <div className="mt-3 p-4 bg-gray-900/50 rounded-lg border border-gray-700 space-y-4">
+                  <div className={`mt-3 p-4 rounded-lg border space-y-4 ${isDark ? 'bg-gray-900/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-sm font-bold text-orange-300 uppercase tracking-wider">
                         Sidechain Compression
@@ -3406,7 +3410,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                         className={`px-2 py-1 text-xs rounded ${
                           sidechainEnabled
                             ? "bg-orange-600 text-white"
-                            : "bg-gray-700 text-gray-400"
+                            : isDark ? "bg-gray-700 text-gray-400" : "bg-gray-100 text-gray-600"
                         }`}
                       >
                         {sidechainEnabled ? "ON" : "OFF"}
@@ -3416,7 +3420,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                     {/* Source & Target Selection */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs text-gray-400 mb-1">
+                        <label className={`block text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                           Sidechain Source
                         </label>
                         <select
@@ -3426,7 +3430,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                               e.target.value as "inst" | "vocal" | "harmony",
                             )
                           }
-                          className="w-full bg-gray-800 border border-gray-600 rounded-md py-1.5 px-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          className={`w-full ${isDark ? 'bg-gray-800 border-gray-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'} border rounded-md py-1.5 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500`}
                         >
                           <option value="inst">Instrumental</option>
                           <option value="vocal">Vocal</option>
@@ -3434,7 +3438,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-400 mb-1">
+                        <label className={`block text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                           Duck Target
                         </label>
                         <select
@@ -3444,7 +3448,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                               e.target.value as "vocal" | "harmony",
                             )
                           }
-                          className="w-full bg-gray-800 border border-gray-600 rounded-md py-1.5 px-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                          className={`w-full ${isDark ? 'bg-gray-800 border-gray-600 text-gray-200' : 'bg-white border-gray-300 text-gray-900'} border rounded-md py-1.5 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500`}
                         >
                           <option value="vocal">Vocal</option>
                           <option value="harmony">Harmony</option>
@@ -3642,7 +3646,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
 
                 {/* Pro Metering Panel */}
                 {showProMetering && (
-                  <div className="mt-3 p-4 bg-gray-900/50 rounded-lg border border-gray-700 space-y-4">
+                  <div className={`mt-3 p-4 rounded-lg border space-y-4 ${isDark ? 'bg-gray-900/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-sm font-bold text-indigo-300 uppercase tracking-wider">
                         Pro Metering
@@ -3652,19 +3656,19 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                           onClick={() =>
                             setShowSpectrumAnalyzer(!showSpectrumAnalyzer)
                           }
-                          className={`px-2 py-1 text-xs rounded ${showSpectrumAnalyzer ? "bg-indigo-600 text-white" : "bg-gray-700 text-gray-400"}`}
+                          className={`px-2 py-1 text-xs rounded ${showSpectrumAnalyzer ? "bg-indigo-600 text-white" : isDark ? "bg-gray-700 text-gray-400" : "bg-gray-100 text-gray-600"}`}
                         >
                           Spectrum
                         </button>
                         <button
                           onClick={() => setShowLufsMeter(!showLufsMeter)}
-                          className={`px-2 py-1 text-xs rounded ${showLufsMeter ? "bg-indigo-600 text-white" : "bg-gray-700 text-gray-400"}`}
+                          className={`px-2 py-1 text-xs rounded ${showLufsMeter ? "bg-indigo-600 text-white" : isDark ? "bg-gray-700 text-gray-400" : "bg-gray-100 text-gray-600"}`}
                         >
                           LUFS
                         </button>
                         <button
                           onClick={() => setShowStereoField(!showStereoField)}
-                          className={`px-2 py-1 text-xs rounded ${showStereoField ? "bg-indigo-600 text-white" : "bg-gray-700 text-gray-400"}`}
+                          className={`px-2 py-1 text-xs rounded ${showStereoField ? "bg-indigo-600 text-white" : isDark ? "bg-gray-700 text-gray-400" : "bg-gray-100 text-gray-600"}`}
                         >
                           Stereo
                         </button>
@@ -3672,7 +3676,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                           onClick={() =>
                             setShowMultibandCompressor(!showMultibandCompressor)
                           }
-                          className={`px-2 py-1 text-xs rounded ${showMultibandCompressor ? "bg-indigo-600 text-white" : "bg-gray-700 text-gray-400"}`}
+                          className={`px-2 py-1 text-xs rounded ${showMultibandCompressor ? "bg-indigo-600 text-white" : isDark ? "bg-gray-700 text-gray-400" : "bg-gray-100 text-gray-600"}`}
                         >
                           Multiband
                         </button>
@@ -3680,7 +3684,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                           onClick={() =>
                             setShowReferenceTrack(!showReferenceTrack)
                           }
-                          className={`px-2 py-1 text-xs rounded ${showReferenceTrack ? "bg-purple-600 text-white" : "bg-gray-700 text-gray-400"}`}
+                          className={`px-2 py-1 text-xs rounded ${showReferenceTrack ? "bg-purple-600 text-white" : isDark ? "bg-gray-700 text-gray-400" : "bg-gray-100 text-gray-600"}`}
                         >
                           Reference
                         </button>
@@ -4022,13 +4026,13 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                 )}
 
                 {/* AI Tools Section */}
-                <div className="mt-3 pt-3 border-t border-gray-700">
+                <div className={`mt-3 pt-3 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                   <button
                     onClick={() => setShowAITools(!showAITools)}
                     className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                       showAITools
                         ? "bg-purple-500/20 border border-purple-500 text-purple-300"
-                        : "bg-gray-800 border border-gray-600 text-gray-400 hover:bg-gray-700"
+                        : isDark ? "bg-gray-800 border border-gray-600 text-gray-400 hover:bg-gray-700" : "bg-gray-100 border border-gray-300 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
                     <svg
@@ -4050,7 +4054,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
 
                 {/* AI Tools Panel */}
                 {showAITools && (
-                  <div className="mt-3 p-4 bg-gray-900/50 rounded-lg border border-gray-700 space-y-4">
+                  <div className={`mt-3 p-4 rounded-lg border space-y-4 ${isDark ? 'bg-gray-900/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-sm font-bold text-purple-300 uppercase tracking-wider">
                         AI Production Tools
@@ -4060,7 +4064,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                           onClick={() =>
                             setShowMasteringAssistant(!showMasteringAssistant)
                           }
-                          className={`px-2 py-1 text-xs rounded ${showMasteringAssistant ? "bg-purple-600 text-white" : "bg-gray-700 text-gray-400"}`}
+                          className={`px-2 py-1 text-xs rounded ${showMasteringAssistant ? "bg-purple-600 text-white" : isDark ? "bg-gray-700 text-gray-400" : "bg-gray-100 text-gray-600"}`}
                         >
                           Mastering
                         </button>
@@ -4068,7 +4072,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                           onClick={() =>
                             setShowChordSuggestions(!showChordSuggestions)
                           }
-                          className={`px-2 py-1 text-xs rounded ${showChordSuggestions ? "bg-purple-600 text-white" : "bg-gray-700 text-gray-400"}`}
+                          className={`px-2 py-1 text-xs rounded ${showChordSuggestions ? "bg-purple-600 text-white" : isDark ? "bg-gray-700 text-gray-400" : "bg-gray-100 text-gray-600"}`}
                         >
                           Chords
                         </button>
@@ -4076,7 +4080,7 @@ const AudioProduction: React.FC<AudioProductionProps> = ({
                           onClick={() =>
                             setShowStemSeparator(!showStemSeparator)
                           }
-                          className={`px-2 py-1 text-xs rounded ${showStemSeparator ? "bg-purple-600 text-white" : "bg-gray-700 text-gray-400"}`}
+                          className={`px-2 py-1 text-xs rounded ${showStemSeparator ? "bg-purple-600 text-white" : isDark ? "bg-gray-700 text-gray-400" : "bg-gray-100 text-gray-600"}`}
                         >
                           Stems
                         </button>

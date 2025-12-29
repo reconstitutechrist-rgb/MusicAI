@@ -1,6 +1,7 @@
 import React from "react";
 import { ControlMode } from "../../../../types/timeline";
 import { useTimeline } from "../TimelineEditorContext";
+import { useTheme } from "../../../../context/AppContext";
 
 interface ControlModeSelectorProps {
   className?: string;
@@ -12,6 +13,8 @@ interface ControlModeSelectorProps {
 export function ControlModeSelector({
   className = "",
 }: ControlModeSelectorProps) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const { state, actions } = useTimeline();
   const { controlMode, isAnalyzing } = state;
 
@@ -43,7 +46,7 @@ export function ControlModeSelector({
 
   return (
     <div
-      className={`flex items-center gap-1 p-1 bg-gray-800/50 rounded-lg ${className}`}
+      className={`flex items-center gap-1 p-1 rounded-lg ${isDark ? 'bg-gray-800/50' : 'bg-gray-200'} ${className}`}
     >
       {modes.map((mode) => (
         <button
@@ -53,7 +56,7 @@ export function ControlModeSelector({
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
             controlMode === mode.value
               ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/25"
-              : "text-white/60 hover:text-white hover:bg-white/10"
+              : isDark ? "text-white/60 hover:text-white hover:bg-white/10" : "text-gray-600 hover:text-gray-900 hover:bg-gray-300"
           } ${isAnalyzing ? "opacity-50 cursor-not-allowed" : ""}`}
           title={mode.description}
           aria-pressed={controlMode === mode.value}

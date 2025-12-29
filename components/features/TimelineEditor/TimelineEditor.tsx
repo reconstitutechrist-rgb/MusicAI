@@ -6,6 +6,7 @@ import { TransportControls } from "./components/TransportControls";
 import { ControlModeSelector } from "./components/ControlModeSelector";
 import { SongLibraryPanel } from "./components/SongLibraryPanel";
 import { LibrarySong } from "../../../types/timeline";
+import { useTheme } from "../../../context/AppContext";
 
 interface TimelineEditorProps {
   songs: LibrarySong[];
@@ -25,6 +26,8 @@ function TimelineEditorInner({
   onExport,
   onUploadSong,
 }: Omit<TimelineEditorProps, "audioContext">) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
   const { state, actions } = useTimeline();
@@ -134,12 +137,12 @@ function TimelineEditorInner({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col h-full bg-gray-950 rounded-xl overflow-hidden"
+      className={`flex flex-col h-full rounded-xl overflow-hidden ${isDark ? 'bg-gray-950' : 'bg-white'}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gray-900/80 border-b border-white/10">
+      <div className={`flex items-center justify-between px-4 py-3 border-b ${isDark ? 'bg-gray-900/80 border-white/10' : 'bg-gray-100 border-gray-200'}`}>
         <div className="flex items-center gap-4">
-          <h2 className="text-lg font-semibold text-white">Song Merger</h2>
+          <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Song Merger</h2>
           <ControlModeSelector />
         </div>
 
@@ -202,7 +205,7 @@ function TimelineEditorInner({
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              className={`p-2 rounded-lg transition-colors ${isDark ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'}`}
               aria-label="Close"
             >
               <svg
@@ -246,10 +249,10 @@ function TimelineEditorInner({
 
           {/* Suggestions panel (if any) */}
           {state.suggestions.length > 0 && (
-            <div className="p-3 bg-gray-900/80 border-t border-white/10">
+            <div className={`p-3 border-t ${isDark ? 'bg-gray-900/80 border-white/10' : 'bg-gray-50 border-gray-200'}`}>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-yellow-400">💡</span>
-                <span className="text-sm font-medium text-white">
+                <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   AI Suggestions
                 </span>
               </div>
@@ -257,9 +260,9 @@ function TimelineEditorInner({
                 {state.suggestions.map((suggestion) => (
                   <div
                     key={suggestion.id}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg text-sm"
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm ${isDark ? 'bg-white/5' : 'bg-gray-100'}`}
                   >
-                    <span className="text-white/80">
+                    <span className={isDark ? 'text-white/80' : 'text-gray-700'}>
                       {suggestion.description}
                     </span>
                     <button
@@ -287,11 +290,11 @@ function TimelineEditorInner({
       {/* Auto Merge Modal */}
       {showAutoMergeModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl">
-            <h3 className="text-xl font-semibold text-white mb-4">
+          <div className={`rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+            <h3 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
               Auto Merge Songs
             </h3>
-            <p className="text-white/60 text-sm mb-4">
+            <p className={`text-sm mb-4 ${isDark ? 'text-white/60' : 'text-gray-600'}`}>
               Describe how you want the songs merged. The AI will analyze the
               songs and create an optimal arrangement with smooth transitions.
             </p>
@@ -299,12 +302,12 @@ function TimelineEditorInner({
               value={autoMergeDescription}
               onChange={(e) => setAutoMergeDescription(e.target.value)}
               placeholder="e.g., Create an energetic party mix that builds up gradually, with smooth transitions between songs..."
-              className="w-full h-32 bg-white/5 border border-white/10 rounded-lg p-3 text-white placeholder:text-white/30 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className={`w-full h-32 border rounded-lg p-3 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${isDark ? 'bg-white/5 border-white/10 text-white placeholder:text-white/30' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-400'}`}
             />
             <div className="flex justify-end gap-3 mt-4">
               <button
                 onClick={() => setShowAutoMergeModal(false)}
-                className="px-4 py-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                className={`px-4 py-2 rounded-lg transition-colors ${isDark ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
               >
                 Cancel
               </button>

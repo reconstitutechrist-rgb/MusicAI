@@ -8,6 +8,7 @@ import React, {
 import Card from "../ui/Card";
 import Button from "../ui/Button";
 import VuMeter from "../ui/VuMeter";
+import { useTheme } from "../../context/AppContext";
 import {
   KaraokeSong,
   KaraokeRecordingState,
@@ -31,6 +32,9 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
   onOpenInMixer,
   onBackToMixer,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   // Song selection state
   const [selectedSong, setSelectedSong] = useState<KaraokeSong | null>(null);
 
@@ -534,11 +538,11 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+          <h2 className={`text-2xl font-bold flex items-center gap-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
             <span className="text-3xl">🎤</span>
             Karaoke Mode
           </h2>
-          <p className="text-gray-400 mt-1">
+          <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             Sing along to your AI-generated songs and record your vocals
           </p>
         </div>
@@ -552,14 +556,14 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
       {/* Song Selector */}
       {!selectedSong ? (
         <Card>
-          <h3 className="text-lg font-semibold text-white mb-4">
+          <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
             Select a Song
           </h3>
           {availableSongs.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🎵</div>
-              <p className="text-gray-400 text-lg">No songs available yet</p>
-              <p className="text-gray-500 text-sm mt-2">
+              <p className={`text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>No songs available yet</p>
+              <p className={`text-sm mt-2 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                 Create a song in Compose and send it to Karaoke mode
               </p>
             </div>
@@ -569,23 +573,23 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
                 <button
                   key={song.id}
                   onClick={() => handleSongSelect(song)}
-                  className="w-full text-left p-4 rounded-xl bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700/50 hover:border-indigo-500/50 transition-all"
+                  className={`w-full text-left p-4 rounded-xl border transition-all ${isDark ? 'bg-gray-800/50 hover:bg-gray-700/50 border-gray-700/50 hover:border-indigo-500/50' : 'bg-gray-50 hover:bg-gray-100 border-gray-200 hover:border-indigo-400'}`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-semibold text-white">
+                      <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {song.songData.title}
                       </h4>
-                      <p className="text-sm text-gray-400 mt-1">
+                      <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                         {song.songData.style}
                       </p>
                     </div>
                     <div className="text-right">
-                      <span className="text-sm text-gray-500">
+                      <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                         {formatTime(song.duration)}
                       </span>
                       {song.bpm && (
-                        <span className="text-xs text-gray-600 block">
+                        <span className={`text-xs block ${isDark ? 'text-gray-600' : 'text-gray-500'}`}>
                           {song.bpm} BPM
                         </span>
                       )}
@@ -604,7 +608,7 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setSelectedSong(null)}
-                  className="p-2 rounded-lg bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-white transition-colors"
+                  className={`p-2 rounded-lg transition-colors ${isDark ? 'bg-gray-700/50 hover:bg-gray-600/50 text-gray-400 hover:text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900'}`}
                   aria-label="Back to song selection"
                 >
                   <svg
@@ -622,10 +626,10 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
                   </svg>
                 </button>
                 <div>
-                  <h3 className="font-semibold text-white">
+                  <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {selectedSong.songData.title}
                   </h3>
-                  <p className="text-sm text-gray-400">
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     {selectedSong.songData.style}
                   </p>
                 </div>
@@ -763,7 +767,7 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
             </div>
 
             {/* Playback controls */}
-            <div className="border-t border-gray-700/50 p-4">
+            <div className={`border-t p-4 ${isDark ? 'border-gray-700/50' : 'border-gray-200'}`}>
               <div className="flex items-center gap-4">
                 {/* Play/Pause */}
                 <button
@@ -792,7 +796,7 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
                 </button>
 
                 {/* Time display */}
-                <span className="text-sm text-gray-400 w-16">
+                <span className={`text-sm w-16 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   {formatTime(currentTime)}
                 </span>
 
@@ -804,11 +808,11 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
                   value={currentTime}
                   onChange={handleSeek}
                   disabled={recordingState.isRecording}
-                  className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500 disabled:opacity-50"
+                  className={`flex-1 h-2 rounded-lg appearance-none cursor-pointer accent-indigo-500 disabled:opacity-50 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}
                 />
 
                 {/* Duration */}
-                <span className="text-sm text-gray-400 w-16 text-right">
+                <span className={`text-sm w-16 text-right ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   {formatTime(duration || selectedSong.duration)}
                 </span>
               </div>
@@ -820,10 +824,10 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">
+                  <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     Recording
                   </h3>
-                  <p className="text-sm text-gray-400">
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     Record your vocals over the instrumental
                   </p>
                 </div>
@@ -889,16 +893,16 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
           {/* Post-Recording Flow */}
           {showPostRecording && (
             <Card>
-              <h3 className="text-lg font-semibold text-white mb-4">
+              <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 Your Recording
               </h3>
 
               {/* Preview section */}
-              <div className="mb-6 p-4 rounded-xl bg-gray-800/50">
+              <div className={`mb-6 p-4 rounded-xl ${isDark ? 'bg-gray-800/50' : 'bg-gray-100'}`}>
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <p className="text-white font-medium">Preview</p>
-                    <p className="text-sm text-gray-400">
+                    <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Preview</p>
+                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                       Listen to your recording over the instrumental
                     </p>
                   </div>
@@ -931,19 +935,19 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
 
                 {/* Enhanced toggle */}
                 {enhancedBlobUrl && (
-                  <div className="flex items-center gap-4 p-3 rounded-lg bg-gray-700/50">
+                  <div className={`flex items-center gap-4 p-3 rounded-lg ${isDark ? 'bg-gray-700/50' : 'bg-gray-200/50'}`}>
                     <label className="flex items-center gap-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={useEnhanced}
                         onChange={(e) => setUseEnhanced(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-600 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-gray-800"
+                        className={`w-4 h-4 rounded text-indigo-500 focus:ring-indigo-500 ${isDark ? 'border-gray-600 focus:ring-offset-gray-800' : 'border-gray-300 focus:ring-offset-white'}`}
                       />
-                      <span className="text-white">
+                      <span className={isDark ? 'text-white' : 'text-gray-900'}>
                         Use AI Enhanced Version
                       </span>
                     </label>
-                    <span className="text-xs text-gray-500">
+                    <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                       Auto-tune + Reverb applied
                     </span>
                   </div>
@@ -954,11 +958,11 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
               <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/30">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-white font-medium flex items-center gap-2">
+                    <p className={`font-medium flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                       <span className="text-xl">✨</span>
                       AI Enhancement
                     </p>
-                    <p className="text-sm text-gray-400 mt-1">
+                    <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                       Apply auto-tune and reverb to polish your vocals
                     </p>
                   </div>
@@ -1054,15 +1058,15 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
               className="w-full flex items-center justify-between"
             >
               <div>
-                <h3 className="text-lg font-semibold text-white text-left">
+                <h3 className={`text-lg font-semibold text-left ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   Timing Adjustments
                 </h3>
-                <p className="text-sm text-gray-400 text-left">
+                <p className={`text-sm text-left ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   Fine-tune lyrics timing if needed
                 </p>
               </div>
               <svg
-                className={`w-5 h-5 text-gray-400 transition-transform ${isEditingTiming ? "rotate-180" : ""}`}
+                className={`w-5 h-5 transition-transform ${isEditingTiming ? "rotate-180" : ""} ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -1079,7 +1083,7 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
             {isEditingTiming && (
               <div className="mt-4 space-y-4">
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm text-gray-400">
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     Adjust timing for individual lines (±ms)
                   </p>
                   <Button
@@ -1100,15 +1104,15 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
                     return (
                       <div
                         key={line.id}
-                        className="flex items-center gap-4 p-2 rounded-lg bg-gray-800/50"
+                        className={`flex items-center gap-4 p-2 rounded-lg ${isDark ? 'bg-gray-800/50' : 'bg-gray-100'}`}
                       >
-                        <span className="text-xs text-gray-500 w-8">
+                        <span className={`text-xs w-8 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                           #{index + 1}
                         </span>
-                        <span className="flex-1 text-sm text-gray-300 truncate">
+                        <span className={`flex-1 text-sm truncate ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                           {line.text}
                         </span>
-                        <span className="text-xs text-gray-500 w-24">
+                        <span className={`text-xs w-24 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                           {formatTime(line.startTime)} -{" "}
                           {formatTime(line.endTime)}
                         </span>
@@ -1120,12 +1124,12 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
                                 -100,
                               )
                             }
-                            className="p-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-300"
+                            className={`p-1 rounded ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                             title="Earlier (-100ms)"
                           >
                             -
                           </button>
-                          <span className="w-16 text-center text-xs text-gray-400">
+                          <span className={`w-16 text-center text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                             {adjustment?.offsetMs || 0}ms
                           </span>
                           <button
@@ -1135,7 +1139,7 @@ const KaraokeMode: React.FC<KaraokeModeProps> = ({
                                 100,
                               )
                             }
-                            className="p-1 rounded bg-gray-700 hover:bg-gray-600 text-gray-300"
+                            className={`p-1 rounded ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                             title="Later (+100ms)"
                           >
                             +

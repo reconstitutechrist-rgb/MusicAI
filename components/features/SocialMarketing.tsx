@@ -10,6 +10,7 @@ import {
 } from "../../services/geminiService";
 import { SocialMarketingPackage, SavedCampaign } from "../../types";
 import PostPreview from "../ui/PostPreview";
+import { useTheme } from "../../context/AppContext";
 
 interface SocialMarketingProps {
   lyrics: string;
@@ -44,6 +45,9 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
   lyrics,
   songConcept,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   const [result, setResult] = useState<SocialMarketingPackage | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -445,7 +449,7 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
           <div>
             <label
               htmlFor="targetAudience"
-              className="block text-sm font-medium text-gray-300"
+              className={`block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
             >
               Target Audience
             </label>
@@ -454,12 +458,12 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
               id="targetAudience"
               value={targetAudience}
               onChange={(e) => setTargetAudience(e.target.value)}
-              className="mt-1 block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm placeholder-gray-500"
+              className={`mt-1 block w-full rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${isDark ? 'bg-gray-900 border-gray-600 placeholder-gray-500' : 'bg-white border-gray-300 placeholder-gray-400'}`}
               placeholder="e.g., Fans of lo-fi hip hop and chillwave"
             />
           </div>
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <p className="text-gray-400 mt-1">
+            <p className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               {lyrics
                 ? "Create a campaign below, or load a saved one."
                 : "First, create a song in the 'Create' tab."}
@@ -505,11 +509,11 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                 {savedCampaigns.map((campaign) => (
                   <div
                     key={campaign.id}
-                    className="flex justify-between items-center p-3 bg-gray-900/50 rounded-md"
+                    className={`flex justify-between items-center p-3 rounded-md ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}
                   >
                     <div>
                       <p className="font-semibold text-sm">{campaign.name}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                         {new Date(campaign.createdAt).toLocaleString()}
                       </p>
                     </div>
@@ -551,7 +555,7 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                   {result.hashtags.map((tag, i) => (
                     <span
                       key={i}
-                      className="bg-gray-700 text-indigo-300 text-xs font-medium px-2.5 py-1 rounded-full"
+                      className={`text-xs font-medium px-2.5 py-1 rounded-full ${isDark ? 'bg-gray-700 text-indigo-300' : 'bg-indigo-100 text-indigo-700'}`}
                     >
                       {tag.startsWith("#") ? tag : `#${tag}`}
                     </span>
@@ -573,9 +577,9 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                       {p.variations.map((v, j) => (
                         <div
                           key={j}
-                          className="flex justify-between items-start p-3 bg-gray-900/50 rounded-md"
+                          className={`flex justify-between items-start p-3 rounded-md ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}
                         >
-                          <p className="text-sm text-gray-300 whitespace-pre-wrap flex-1">
+                          <p className={`text-sm whitespace-pre-wrap flex-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                             "{v}"
                           </p>
                           <CopyButton textToCopy={v} />
@@ -590,7 +594,7 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                   <h3 className="text-lg font-semibold">Artist Bio</h3>
                   <CopyButton textToCopy={result.artistBio} />
                 </div>
-                <p className="text-gray-400 mt-2 text-sm whitespace-pre-wrap">
+                <p className={`mt-2 text-sm whitespace-pre-wrap ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   {result.artistBio}
                 </p>
               </Card>
@@ -599,7 +603,7 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                   <h3 className="text-lg font-semibold">Press Release</h3>
                   <CopyButton textToCopy={result.pressRelease} />
                 </div>
-                <p className="text-gray-400 mt-2 text-sm whitespace-pre-wrap">
+                <p className={`mt-2 text-sm whitespace-pre-wrap ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   {result.pressRelease}
                 </p>
               </Card>
@@ -611,7 +615,7 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                   {result.interviewPoints.map((point, i) => (
                     <li
                       key={i}
-                      className="flex justify-between items-start text-sm text-gray-400"
+                      className={`flex justify-between items-start text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
                     >
                       <span>• {point}</span>
                       <CopyButton textToCopy={point} />
@@ -627,14 +631,14 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                   {result.releaseTimeline.map((item, i) => (
                     <div
                       key={i}
-                      className="flex items-start gap-3 p-2 bg-gray-900/50 rounded-md"
+                      className={`flex items-start gap-3 p-2 rounded-md ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}
                     >
-                      <div className="bg-indigo-500/20 text-indigo-300 font-bold rounded-md h-8 w-8 flex-shrink-0 flex items-center justify-center text-sm">
+                      <div className={`font-bold rounded-md h-8 w-8 flex-shrink-0 flex items-center justify-center text-sm ${isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-600'}`}>
                         D{item.day}
                       </div>
                       <div>
                         <p className="font-semibold text-sm">{item.platform}</p>
-                        <p className="text-xs text-gray-400">{item.action}</p>
+                        <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{item.action}</p>
                       </div>
                     </div>
                   ))}
@@ -652,7 +656,7 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                 <h3 className="text-lg font-semibold mb-3">
                   Promotional Image
                 </h3>
-                <p className="text-gray-400 mb-4 text-sm">
+                <p className={`mb-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   Use this AI-suggested prompt to generate a visual for your
                   posts.
                 </p>
@@ -662,7 +666,7 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                       value={imagePrompt}
                       onChange={(e) => setImagePrompt(e.target.value)}
                       rows={3}
-                      className="block w-full bg-gray-900 border-gray-600 rounded-md shadow-sm placeholder-gray-500 text-sm"
+                      className={`block w-full rounded-md shadow-sm text-sm ${isDark ? 'bg-gray-900 border-gray-600 placeholder-gray-500' : 'bg-white border-gray-300 placeholder-gray-400'}`}
                     />
                     <CopyButton textToCopy={imagePrompt} />
                   </div>
@@ -671,7 +675,7 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                     <div className="col-span-2">
                       <label
                         htmlFor="aspect-ratio-select"
-                        className="block text-xs font-medium text-gray-400 mb-1"
+                        className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
                       >
                         Aspect Ratio
                       </label>
@@ -679,7 +683,7 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                         id="aspect-ratio-select"
                         value={aspectRatio}
                         onChange={(e) => setAspectRatio(e.target.value as any)}
-                        className="block w-full bg-gray-900 border-gray-600 rounded-md text-sm"
+                        className={`block w-full rounded-md text-sm ${isDark ? 'bg-gray-900 border-gray-600' : 'bg-white border-gray-300'}`}
                       >
                         <option value="1:1">Square (1:1)</option>
                         <option value="9:16">Portrait (9:16)</option>
@@ -689,14 +693,14 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                       </select>
                     </div>
                     <div className="col-span-2">
-                      <h4 className="text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2 mt-2">
+                      <h4 className={`text-xs font-semibold uppercase tracking-wider mb-2 mt-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                         Style Modifiers
                       </h4>
                     </div>
                     <div>
                       <label
                         htmlFor="medium-select"
-                        className="block text-xs font-medium text-gray-400 mb-1"
+                        className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
                       >
                         Medium
                       </label>
@@ -704,7 +708,7 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                         id="medium-select"
                         value={selectedMedium}
                         onChange={(e) => setSelectedMedium(e.target.value)}
-                        className="block w-full bg-gray-900 border-gray-600 rounded-md text-xs py-2"
+                        className={`block w-full rounded-md text-xs py-2 ${isDark ? 'bg-gray-900 border-gray-600' : 'bg-white border-gray-300'}`}
                       >
                         {MEDIUM_OPTIONS.map((opt) => (
                           <option key={opt} value={opt}>
@@ -716,7 +720,7 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                     <div>
                       <label
                         htmlFor="palette-select"
-                        className="block text-xs font-medium text-gray-400 mb-1"
+                        className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
                       >
                         Palette
                       </label>
@@ -724,7 +728,7 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                         id="palette-select"
                         value={selectedPalette}
                         onChange={(e) => setSelectedPalette(e.target.value)}
-                        className="block w-full bg-gray-900 border-gray-600 rounded-md text-xs py-2"
+                        className={`block w-full rounded-md text-xs py-2 ${isDark ? 'bg-gray-900 border-gray-600' : 'bg-white border-gray-300'}`}
                       >
                         {PALETTE_OPTIONS.map((opt) => (
                           <option key={opt} value={opt}>
@@ -736,7 +740,7 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                     <div>
                       <label
                         htmlFor="lighting-select"
-                        className="block text-xs font-medium text-gray-400 mb-1"
+                        className={`block text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
                       >
                         Lighting
                       </label>
@@ -744,7 +748,7 @@ const SocialMarketing: React.FC<SocialMarketingProps> = ({
                         id="lighting-select"
                         value={selectedLighting}
                         onChange={(e) => setSelectedLighting(e.target.value)}
-                        className="block w-full bg-gray-900 border-gray-600 rounded-md text-xs py-2"
+                        className={`block w-full rounded-md text-xs py-2 ${isDark ? 'bg-gray-900 border-gray-600' : 'bg-white border-gray-300'}`}
                       >
                         {LIGHTING_OPTIONS.map((opt) => (
                           <option key={opt} value={opt}>

@@ -8,7 +8,7 @@ import {
   generateLineAlternatives,
 } from "../../services/geminiService";
 import { useUndoRedoWithKeyboard } from "../../hooks/useUndoRedo";
-import { useToast } from "../../context/AppContext";
+import { useToast, useTheme } from "../../context/AppContext";
 
 interface LyricLabProps {
   initialLyrics: string;
@@ -19,6 +19,9 @@ const LyricLab: React.FC<LyricLabProps> = ({
   initialLyrics,
   onUpdateLyrics,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   // Use undo/redo for lyrics with keyboard shortcuts
   const {
     state: lines,
@@ -141,7 +144,7 @@ const LyricLab: React.FC<LyricLabProps> = ({
               <button
                 onClick={handleUndo}
                 disabled={!canUndo}
-                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className={`p-2 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors ${isDark ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'}`}
                 title="Undo (Ctrl+Z)"
                 aria-label="Undo"
               >
@@ -152,7 +155,7 @@ const LyricLab: React.FC<LyricLabProps> = ({
               <button
                 onClick={handleRedo}
                 disabled={!canRedo}
-                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className={`p-2 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors ${isDark ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'}`}
                 title="Redo (Ctrl+Shift+Z)"
                 aria-label="Redo"
               >
@@ -160,18 +163,18 @@ const LyricLab: React.FC<LyricLabProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
                 </svg>
               </button>
-              <span className="text-xs text-gray-500 ml-2">Ctrl+Z / Ctrl+Shift+Z</span>
+              <span className={`text-xs ml-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Ctrl+Z / Ctrl+Shift+Z</span>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto bg-gray-900/50 rounded-lg p-4 font-mono text-lg leading-relaxed">
+          <div className={`flex-1 overflow-y-auto rounded-lg p-4 font-mono text-lg leading-relaxed ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}>
             {lines.map((line, i) => (
               <div
                 key={i}
                 onClick={() => handleLineClick(i)}
-                className={`p-2 rounded cursor-pointer transition-colors ${selectedLineIndex === i ? "bg-indigo-500/30 ring-1 ring-indigo-500" : "hover:bg-gray-700/50"} ${!line.trim() ? "h-8" : ""}`}
+                className={`p-2 rounded cursor-pointer transition-colors ${selectedLineIndex === i ? "bg-indigo-500/30 ring-1 ring-indigo-500" : isDark ? "hover:bg-gray-700/50" : "hover:bg-gray-200"} ${!line.trim() ? "h-8" : ""}`}
               >
                 {line || (
-                  <span className="text-gray-600 italic text-sm">
+                  <span className={`italic text-sm ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
                     -- Empty Line --
                   </span>
                 )}
@@ -179,7 +182,7 @@ const LyricLab: React.FC<LyricLabProps> = ({
             ))}
           </div>
           <textarea
-            className="mt-4 w-full bg-gray-800 border-gray-600 rounded-md p-2 text-sm"
+            className={`mt-4 w-full rounded-md p-2 text-sm ${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}
             rows={3}
             placeholder="Edit raw text here..."
             value={lines.join("\n")}
@@ -192,7 +195,7 @@ const LyricLab: React.FC<LyricLabProps> = ({
             <h3 className="text-xl font-semibold mb-2">Analysis</h3>
             {selectedLineIndex !== null ? (
               isAnalyzing ? (
-                <p className="text-gray-400 animate-pulse">
+                <p className={`animate-pulse ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   Analyzing meter and rhyme...
                 </p>
               ) : analysisError ? (
@@ -203,14 +206,14 @@ const LyricLab: React.FC<LyricLabProps> = ({
                   onDismiss={() => setAnalysisError(null)}
                 />
               ) : (
-                <div className="prose prose-invert prose-sm">
-                  <p className="text-gray-300 whitespace-pre-wrap">
+                <div className={`prose prose-sm ${isDark ? 'prose-invert' : ''}`}>
+                  <p className={`whitespace-pre-wrap ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                     {analysis}
                   </p>
                 </div>
               )
             ) : (
-              <p className="text-gray-500 italic">
+              <p className={`italic ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                 Select a line to see analysis.
               </p>
             )}
@@ -222,7 +225,7 @@ const LyricLab: React.FC<LyricLabProps> = ({
               <select
                 value={rewriteGoal}
                 onChange={(e) => setRewriteGoal(e.target.value)}
-                className="flex-1 bg-gray-700 border-gray-600 rounded-md text-sm py-2 px-3"
+                className={`flex-1 rounded-md text-sm py-2 px-3 ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
               >
                 <option value="Improve Rhyme">Improve Rhyme</option>
                 <option value="Fix Meter/Rhythm">Fix Meter/Rhythm</option>
@@ -254,9 +257,9 @@ const LyricLab: React.FC<LyricLabProps> = ({
               {alternatives.map((alt, i) => (
                 <div
                   key={i}
-                  className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg group"
+                  className={`flex justify-between items-center p-3 rounded-lg group ${isDark ? 'bg-gray-700/50' : 'bg-gray-100'}`}
                 >
-                  <p className="text-sm text-gray-200">{alt}</p>
+                  <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{alt}</p>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -268,7 +271,7 @@ const LyricLab: React.FC<LyricLabProps> = ({
                 </div>
               ))}
               {alternatives.length === 0 && !isGeneratingAlts && !alternativesError && (
-                <p className="text-gray-500 italic text-center mt-8">
+                <p className={`italic text-center mt-8 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                   Select a line and goal to generate options.
                 </p>
               )}

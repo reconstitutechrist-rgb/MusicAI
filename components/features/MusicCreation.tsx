@@ -27,6 +27,7 @@ import { useLiveRegion } from "../ui/LiveRegion";
 import { useToastHelpers } from "../ui/Toast";
 import CreateShowcaseModal from "../community/CreateShowcaseModal";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/AppContext";
 
 // --- Audio Helper Functions ---
 
@@ -257,6 +258,8 @@ const MultiTrackPlayer: React.FC<{
   vocalUrl: string;
   format?: "mp3" | "wav";
 }> = ({ instrumentalUrl, vocalUrl, format = "wav" }) => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const instRef = useRef<HTMLAudioElement>(null);
   const vocalRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -279,9 +282,9 @@ const MultiTrackPlayer: React.FC<{
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg p-3">
+    <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs text-indigo-300 font-bold uppercase tracking-wider">
+        <p className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-indigo-300' : 'text-indigo-600'}`}>
           Multi-Track Demo
         </p>
         <button
@@ -314,14 +317,14 @@ const MultiTrackPlayer: React.FC<{
 
       <div className="space-y-2">
         {/* Instrumental Row */}
-        <div className="flex items-center gap-2 bg-gray-900/50 p-2 rounded">
-          <span className="text-xs text-gray-400 w-20">Instrumental</span>
+        <div className={`flex items-center gap-2 p-2 rounded ${isDark ? 'bg-gray-900/50' : 'bg-gray-200/50'}`}>
+          <span className={`text-xs w-20 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Instrumental</span>
           <button
             onClick={() => setMuteInst(!muteInst)}
             className={`text-xs px-2 py-1 rounded border ${
               muteInst
                 ? "bg-red-500/20 text-red-400 border-red-500/50"
-                : "bg-gray-700 text-gray-300 border-gray-600"
+                : isDark ? "bg-gray-700 text-gray-300 border-gray-600" : "bg-gray-200 text-gray-700 border-gray-300"
             }`}
             aria-label={
               muteInst ? "Unmute instrumental track" : "Mute instrumental track"
@@ -330,7 +333,7 @@ const MultiTrackPlayer: React.FC<{
           >
             {muteInst ? "Muted" : "Mute"}
           </button>
-          <div className="flex-1 h-1 bg-gray-700 rounded overflow-hidden">
+          <div className={`flex-1 h-1 rounded overflow-hidden ${isDark ? 'bg-gray-700' : 'bg-gray-300'}`}>
             <div
               className={`h-full bg-indigo-500 ${
                 muteInst ? "opacity-30" : "opacity-100"
@@ -341,21 +344,21 @@ const MultiTrackPlayer: React.FC<{
         </div>
 
         {/* Vocal Row */}
-        <div className="flex items-center gap-2 bg-gray-900/50 p-2 rounded">
-          <span className="text-xs text-gray-400 w-20">Vocals</span>
+        <div className={`flex items-center gap-2 p-2 rounded ${isDark ? 'bg-gray-900/50' : 'bg-gray-200/50'}`}>
+          <span className={`text-xs w-20 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Vocals</span>
           <button
             onClick={() => setMuteVocal(!muteVocal)}
             className={`text-xs px-2 py-1 rounded border ${
               muteVocal
                 ? "bg-red-500/20 text-red-400 border-red-500/50"
-                : "bg-gray-700 text-gray-300 border-gray-600"
+                : isDark ? "bg-gray-700 text-gray-300 border-gray-600" : "bg-gray-200 text-gray-700 border-gray-300"
             }`}
             aria-label={muteVocal ? "Unmute vocal track" : "Mute vocal track"}
             aria-pressed={muteVocal}
           >
             {muteVocal ? "Muted" : "Mute"}
           </button>
-          <div className="flex-1 h-1 bg-gray-700 rounded overflow-hidden">
+          <div className={`flex-1 h-1 rounded overflow-hidden ${isDark ? 'bg-gray-700' : 'bg-gray-300'}`}>
             <div
               className={`h-full bg-pink-500 ${
                 muteVocal ? "opacity-30" : "opacity-100"
@@ -374,11 +377,11 @@ const MultiTrackPlayer: React.FC<{
       />
       <audio ref={vocalRef} src={vocalUrl} muted={muteVocal} />
 
-      <div className="mt-3 pt-2 border-t border-gray-700 flex justify-end gap-3">
+      <div className={`mt-3 pt-2 border-t flex justify-end gap-3 ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
         <a
           href={instrumentalUrl}
           download={`instrumental.${format}`}
-          className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
+          className={`text-xs flex items-center gap-1 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
           aria-label={`Download instrumental track as ${format.toUpperCase()}`}
         >
           <DownloadIcon className="w-3 h-3" aria-hidden="true" /> Inst
@@ -386,7 +389,7 @@ const MultiTrackPlayer: React.FC<{
         <a
           href={vocalUrl}
           download={`vocals.${format}`}
-          className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
+          className={`text-xs flex items-center gap-1 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
           aria-label={`Download vocal track as ${format.toUpperCase()}`}
         >
           <DownloadIcon className="w-3 h-3" aria-hidden="true" /> Vox
@@ -426,6 +429,10 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
   onLyricsGenerated,
   onSendToKaraoke,
 }) => {
+  // Theme
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   // State
   const [chatMessages, setChatMessages] =
     useState<ChatMessage[]>(initialMessages);
@@ -961,10 +968,10 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
       return (
         <>
           <h3 className="font-bold text-lg mt-4">Title: "{song.title}"</h3>
-          <p className="text-sm text-gray-400 italic mt-1">
+          <p className={`text-sm italic mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             Style: {song.style}
           </p>
-          <pre className="whitespace-pre-wrap font-sans text-sm bg-gray-900/50 p-3 rounded-md mt-3">
+          <pre className={`whitespace-pre-wrap font-sans text-sm p-3 rounded-md mt-3 ${isDark ? 'bg-gray-900/50' : 'bg-gray-200/70'}`}>
             {song.lyrics}
           </pre>
           {/* Action buttons */}
@@ -991,7 +998,7 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
         </>
       );
     },
-    [handleCopyLyrics, handleShare],
+    [handleCopyLyrics, handleShare, isDark],
   );
 
   return (
@@ -1028,13 +1035,13 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
             {chatMessages.length <= 1 && !isLoading && (
               <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center p-6">
                 <MusicNoteIcon className="w-16 h-16 text-indigo-400/50 mb-4" />
-                <h3 className="text-lg font-medium text-gray-300 mb-2">
+                <h3 className={`text-lg font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                   Start Creating
                 </h3>
-                <p className="text-gray-500 text-sm max-w-md mb-4">
+                <p className={`text-sm max-w-md mb-4 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                   Describe your song idea, mood, or story. Try something like:
                 </p>
-                <div className="space-y-2 text-sm text-indigo-300/80">
+                <div className={`space-y-2 text-sm ${isDark ? 'text-indigo-300/80' : 'text-indigo-600/80'}`}>
                   <p className="italic">
                     "A melancholic ballad about lost love"
                   </p>
@@ -1064,7 +1071,7 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
                       ? "bg-indigo-600 text-white"
                       : msg.isError
                         ? "bg-red-900/50 border border-red-500/30"
-                        : "bg-gray-700"
+                        : isDark ? "bg-gray-700" : "bg-gray-100"
                   }`}
                 >
                   <div className="whitespace-pre-wrap text-sm">{msg.text}</div>
@@ -1082,27 +1089,27 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
                   )}
 
                   {msg.songData && (
-                    <div className="mt-2 border-t border-gray-600 pt-2">
+                    <div className={`mt-2 border-t pt-2 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
                       {formatSongForDisplay(msg.songData)}
 
                       {/* Structure Plan Section */}
                       {msg.structurePlan ? (
-                        <div className="mt-4 border-l-2 border-indigo-500 pl-3 space-y-2 bg-gray-800/50 p-3 rounded-r-md">
-                          <h4 className="font-bold text-indigo-300 text-sm mb-2">
+                        <div className={`mt-4 border-l-2 border-indigo-500 pl-3 space-y-2 p-3 rounded-r-md ${isDark ? 'bg-gray-800/50' : 'bg-indigo-50/50'}`}>
+                          <h4 className={`font-bold text-sm mb-2 ${isDark ? 'text-indigo-300' : 'text-indigo-600'}`}>
                             Structure Plan
                           </h4>
                           {msg.structurePlan.map((section, idx) => (
                             <div
                               key={idx}
-                              className="flex flex-wrap justify-between text-xs gap-2 border-b border-gray-700 pb-1 last:border-0"
+                              className={`flex flex-wrap justify-between text-xs gap-2 border-b pb-1 last:border-0 ${isDark ? 'border-gray-700' : 'border-gray-300'}`}
                             >
-                              <span className="font-semibold text-white w-20">
+                              <span className={`font-semibold w-20 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                                 {section.name}
                               </span>
-                              <span className="text-gray-400 flex-1">
+                              <span className={`flex-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                                 {section.description}
                               </span>
-                              <span className="text-gray-500 font-mono">
+                              <span className={`font-mono ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                                 {section.bars} bars
                               </span>
                             </div>
@@ -1130,14 +1137,14 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
                             role="status"
                             aria-live="polite"
                             aria-label="Generating audio"
-                            className="flex flex-col items-center justify-center p-4 bg-gray-800 rounded-lg"
+                            className={`flex flex-col items-center justify-center p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}
                           >
                             <span className="sr-only">
                               Generating audio tracks...
                             </span>
                             <div className="flex items-center">
                               <svg
-                                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                                className={`animate-spin -ml-1 mr-3 h-5 w-5 ${isDark ? 'text-white' : 'text-indigo-600'}`}
                                 xmlns="http://www.w3.org/2000/svg"
                                 fill="none"
                                 viewBox="0 0 24 24"
@@ -1163,7 +1170,7 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
                               </span>
                             </div>
                             {useElevenLabsApi && (
-                              <p className="text-xs text-gray-500 mt-2">
+                              <p className={`text-xs mt-2 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                                 Using ElevenLabs for high-quality audio (this
                                 may take 30-60 seconds) • Est. cost: {estimateCost(120000).estimatedCost}
                               </p>
@@ -1201,7 +1208,7 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
                               Generate Full Song Demo (Instrumental + Vocals)
                             </Button>
                             {useElevenLabsApi && (
-                              <p className="text-xs text-gray-500 text-center">
+                              <p className={`text-xs text-center ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                                 Est. cost: {estimateCost(120000).estimatedCost} (2 × 1 min tracks)
                               </p>
                             )}
@@ -1235,9 +1242,9 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
                 role="status"
                 aria-live="polite"
               >
-                <div className="max-w-[85%] md:max-w-prose px-4 py-3 rounded-lg bg-gray-700">
+                <div className={`max-w-[85%] md:max-w-prose px-4 py-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
                   <span className="sr-only">AI is generating a response</span>
-                  <p className="text-sm italic text-gray-400">
+                  <p className={`text-sm italic ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     Song Maker is typing...
                   </p>
                 </div>
@@ -1245,7 +1252,7 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
             )}
             <div ref={chatEndRef} />
           </div>
-          <div className="mt-auto p-4 border-t border-gray-700">
+          <div className={`mt-auto p-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             {/* Style suggestions - touch-friendly with larger tap targets */}
             {chatMessages.length === 1 && (
               <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
@@ -1255,7 +1262,11 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
                     onClick={() =>
                       handleChatSend(`I want to write a ${style} song.`)
                     }
-                    className="whitespace-nowrap px-4 py-2 min-h-[44px] bg-gray-700 hover:bg-gray-600 active:bg-gray-500 rounded-full text-sm text-indigo-300 border border-gray-600 transition-colors touch-manipulation"
+                    className={`whitespace-nowrap px-4 py-2 min-h-[44px] rounded-full text-sm transition-colors touch-manipulation ${
+                      isDark
+                        ? 'bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-indigo-300 border border-gray-600'
+                        : 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-indigo-600 border border-gray-300'
+                    }`}
                   >
                     {style}
                   </button>
@@ -1280,7 +1291,11 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
                     handleChatSend();
                   }
                 }}
-                className="flex-1 bg-gray-800 border border-gray-600 rounded-l-md focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 resize-none min-h-[44px] p-3"
+                className={`flex-1 border rounded-l-md focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 resize-none min-h-[44px] p-3 ${
+                  isDark
+                    ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                }`}
                 placeholder="Describe your song idea... Try: 'A dreamy indie track about stargazing' or 'Make it more upbeat'"
                 disabled={isLoading}
                 aria-describedby="chat-input-hint"

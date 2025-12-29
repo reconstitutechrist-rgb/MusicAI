@@ -3,6 +3,7 @@ import Page from "../ui/Page";
 import Tabs from "../ui/Tabs";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
+import { useTheme } from "../../context/AppContext";
 import {
   generateImage,
   editImage,
@@ -84,6 +85,9 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
   currentImage,
   setCurrentImage,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       role: "model",
@@ -225,14 +229,14 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
           <h3 className="text-xl font-semibold mb-4">
             Image Studio Conversation
           </h3>
-          <div className="flex-1 h-96 overflow-y-auto bg-gray-900/50 rounded-lg p-4 space-y-4">
+          <div className={`flex-1 h-96 overflow-y-auto rounded-lg p-4 space-y-4 ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}>
             {chatMessages.map((msg, i) => (
               <div
                 key={i}
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-xs md:max-w-md lg:max-w-lg px-4 py-2 rounded-lg ${msg.role === "user" ? "bg-indigo-600 text-white" : "bg-gray-700"}`}
+                  className={`max-w-xs md:max-w-md lg:max-w-lg px-4 py-2 rounded-lg ${msg.role === "user" ? "bg-indigo-600 text-white" : isDark ? "bg-gray-700" : "bg-white shadow-sm"}`}
                 >
                   <p className="whitespace-pre-wrap text-sm">{msg.text}</p>
                 </div>
@@ -263,7 +267,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleChatSend()}
-                className="flex-1 bg-gray-700 border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 rounded-none"
+                className={`flex-1 focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 rounded-none ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                 placeholder={
                   currentImage
                     ? "Describe an edit, or type '/analyze...'"
@@ -292,7 +296,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
               <div>
                 <label
                   htmlFor="aspect-ratio-select"
-                  className="block text-sm font-medium text-gray-300 mb-1"
+                  className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
                 >
                   Aspect Ratio
                 </label>
@@ -300,7 +304,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
                   id="aspect-ratio-select"
                   value={aspectRatio}
                   onChange={(e) => setAspectRatio(e.target.value as any)}
-                  className="block w-full bg-gray-900 border-gray-600 rounded-md text-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500"
+                  className={`block w-full rounded-md text-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500 ${isDark ? 'bg-gray-900 border-gray-600' : 'bg-white border-gray-300'}`}
                 >
                   <option value="1:1">Square (1:1)</option>
                   <option value="16:9">Landscape (16:9)</option>
@@ -310,7 +314,7 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                   Artistic Style
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -333,12 +337,12 @@ const ImageStudio: React.FC<ImageStudioProps> = ({
             </div>
           )}
 
-          <div className="flex-1 flex items-center justify-center bg-gray-900/50 rounded-lg p-4 min-h-0">
+          <div className={`flex-1 flex items-center justify-center rounded-lg p-4 min-h-0 ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}>
             {isLoading && !currentImage && (
-              <p className="text-gray-400">Generating your image...</p>
+              <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>Generating your image...</p>
             )}
             {!isLoading && !currentImage && (
-              <p className="text-gray-400">Your image will appear here.</p>
+              <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>Your image will appear here.</p>
             )}
             {currentImage && (
               <img
@@ -374,6 +378,9 @@ const MusicVideoGenerator: React.FC<MusicVideoGeneratorProps> = ({
   songConcept,
   imageFromStudio,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   const {
     state: chatMessages,
     set: setChatMessages,
@@ -606,7 +613,7 @@ const MusicVideoGenerator: React.FC<MusicVideoGeneratorProps> = ({
         <h3 className="text-xl font-semibold mb-4">
           API Key Required for Video Generation
         </h3>
-        <p className="text-gray-400 mb-6">
+        <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
           Veo video generation requires you to select an API key. Please ensure
           you have billing enabled.
           <a
@@ -626,7 +633,7 @@ const MusicVideoGenerator: React.FC<MusicVideoGeneratorProps> = ({
   if (!lyrics) {
     return (
       <Card>
-        <p className="text-center text-gray-400">
+        <p className={`text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
           Please generate a song in the "Create" tab before making a music
           video.
         </p>
@@ -641,14 +648,14 @@ const MusicVideoGenerator: React.FC<MusicVideoGeneratorProps> = ({
           <h3 className="text-xl font-semibold mb-4">
             1. Develop Your Video Concept
           </h3>
-          <div className="flex-1 overflow-y-auto bg-gray-900/50 rounded-lg p-4 space-y-4">
+          <div className={`flex-1 overflow-y-auto rounded-lg p-4 space-y-4 ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}>
             {chatMessages.map((msg, i) => (
               <div
                 key={i}
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-xs md:max-w-md lg:max-w-lg px-4 py-2 rounded-lg ${msg.role === "user" ? "bg-indigo-600 text-white" : "bg-gray-700"}`}
+                  className={`max-w-xs md:max-w-md lg:max-w-lg px-4 py-2 rounded-lg ${msg.role === "user" ? "bg-indigo-600 text-white" : isDark ? "bg-gray-700" : "bg-white shadow-sm"}`}
                 >
                   <p className="whitespace-pre-wrap text-sm">{msg.text}</p>
                 </div>
@@ -656,8 +663,8 @@ const MusicVideoGenerator: React.FC<MusicVideoGeneratorProps> = ({
             ))}
             {isAiTyping && (
               <div className="flex justify-start">
-                <div className="max-w-xs px-4 py-2 rounded-lg bg-gray-700">
-                  <p className="whitespace-pre-wrap text-sm italic text-gray-400">
+                <div className={`max-w-xs px-4 py-2 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-white shadow-sm'}`}>
+                  <p className={`whitespace-pre-wrap text-sm italic ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     ...
                   </p>
                 </div>
@@ -676,7 +683,7 @@ const MusicVideoGenerator: React.FC<MusicVideoGeneratorProps> = ({
                   !e.shiftKey &&
                   (e.preventDefault(), handleChatSend())
                 }
-                className="flex-1 bg-gray-700 border-gray-600 rounded-l-md focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 resize-none"
+                className={`flex-1 rounded-l-md focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 resize-none ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                 placeholder={
                   generationState === "generating"
                     ? "AI is generating..."
@@ -717,7 +724,7 @@ const MusicVideoGenerator: React.FC<MusicVideoGeneratorProps> = ({
       <div className="lg:col-span-2 h-[75vh] flex flex-col">
         <Card className="h-full flex flex-col">
           <h3 className="text-xl font-semibold mb-4">2. Video Preview</h3>
-          <div className="flex-1 flex flex-col items-center justify-center bg-gray-900/50 rounded-lg p-4">
+          <div className={`flex-1 flex flex-col items-center justify-center rounded-lg p-4 ${isDark ? 'bg-gray-900/50' : 'bg-gray-100'}`}>
             {isLoading && (
               <div className="text-center">
                 <svg
@@ -785,7 +792,7 @@ const MusicVideoGenerator: React.FC<MusicVideoGeneratorProps> = ({
                 onChange={(e) =>
                   setAspectRatio(e.target.value as "16:9" | "9:16" | "1:1")
                 }
-                className="block w-full bg-gray-700 border-gray-600 rounded-md"
+                className={`block w-full rounded-md ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                 disabled={generationState === "generating"}
               >
                 <option value="16:9">Landscape (16:9)</option>
@@ -797,14 +804,14 @@ const MusicVideoGenerator: React.FC<MusicVideoGeneratorProps> = ({
                 onChange={(e) =>
                   setResolution(e.target.value as "720p" | "1080p")
                 }
-                className="block w-full bg-gray-700 border-gray-600 rounded-md"
+                className={`block w-full rounded-md ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}
                 disabled={generationState === "generating"}
               >
                 <option value="720p">HD (720p)</option>
                 <option value="1080p">Full HD (1080p)</option>
               </select>
             </div>
-            <div className="flex items-center space-x-2 p-2 bg-gray-700/50 rounded-md">
+            <div className={`flex items-center space-x-2 p-2 rounded-md ${isDark ? 'bg-gray-700/50' : 'bg-gray-100'}`}>
               <input
                 id="use-studio-image"
                 type="checkbox"
@@ -815,7 +822,7 @@ const MusicVideoGenerator: React.FC<MusicVideoGeneratorProps> = ({
               />
               <label
                 htmlFor="use-studio-image"
-                className={`text-sm ${!imageFromStudio ? "text-gray-500" : "text-gray-300"}`}
+                className={`text-sm ${!imageFromStudio ? (isDark ? "text-gray-500" : "text-gray-400") : (isDark ? "text-gray-300" : "text-gray-700")}`}
               >
                 Use image from Studio as video start
               </label>
