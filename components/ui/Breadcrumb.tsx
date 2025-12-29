@@ -1,4 +1,5 @@
 import React from "react";
+import { useTheme } from "../../context/AppContext";
 
 export interface BreadcrumbItem {
   label: string;
@@ -14,9 +15,9 @@ interface BreadcrumbProps {
   maxItems?: number;
 }
 
-const DefaultSeparator = () => (
+const DefaultSeparator: React.FC<{ isDark: boolean }> = ({ isDark }) => (
   <svg
-    className="w-4 h-4 text-gray-500 flex-shrink-0"
+    className={`w-4 h-4 flex-shrink-0 ${isDark ? "text-gray-500" : "text-gray-400"}`}
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
@@ -28,10 +29,13 @@ const DefaultSeparator = () => (
 
 const Breadcrumb: React.FC<BreadcrumbProps> = ({
   items,
-  separator = <DefaultSeparator />,
+  separator,
   className = "",
   maxItems,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   // Handle collapsing for long breadcrumbs
   let displayItems = items;
   let showEllipsis = false;
@@ -42,6 +46,20 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
     displayItems = [firstItem, ...lastItems];
     showEllipsis = true;
   }
+
+  // Theme-aware classes
+  const clickableClasses = isDark
+    ? "text-gray-400 hover:text-white"
+    : "text-gray-500 hover:text-gray-900";
+
+  const currentPageClasses = isDark
+    ? "text-white font-medium"
+    : "text-gray-900 font-medium";
+
+  const nonClickableClasses = isDark ? "text-gray-400" : "text-gray-500";
+  const ellipsisClasses = isDark ? "text-gray-500" : "text-gray-400";
+
+  const separatorElement = separator || <DefaultSeparator isDark={isDark} />;
 
   return (
     <nav aria-label="Breadcrumb" className={className}>
@@ -61,7 +79,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
                   <button
                     type="button"
                     onClick={item.onClick}
-                    className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors focus:outline-none focus:underline"
+                    className={`flex items-center gap-1.5 text-sm ${clickableClasses} transition-colors focus:outline-none focus:underline`}
                   >
                     {item.icon && <span className="flex-shrink-0" aria-hidden="true">{item.icon}</span>}
                     <span>{item.label}</span>
@@ -69,7 +87,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
                 ) : (
                   <span
                     className={`flex items-center gap-1.5 text-sm ${
-                      isLast ? "text-white font-medium" : "text-gray-400"
+                      isLast ? currentPageClasses : nonClickableClasses
                     }`}
                     aria-current={isLast ? "page" : undefined}
                   >
@@ -82,15 +100,15 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
               {showEllipsisAfter && (
                 <>
                   <li aria-hidden="true" className="flex items-center">
-                    {separator}
+                    {separatorElement}
                   </li>
-                  <li className="text-gray-500 text-sm">...</li>
+                  <li className={`${ellipsisClasses} text-sm`}>...</li>
                 </>
               )}
 
               {!isLast && (
                 <li aria-hidden="true" className="flex items-center">
-                  {separator}
+                  {separatorElement}
                 </li>
               )}
             </React.Fragment>

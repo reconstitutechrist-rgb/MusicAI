@@ -1,5 +1,5 @@
 import React from "react";
-import { useSessionRestore } from "../../context/AppContext";
+import { useSessionRestore, useTheme } from "../../context/AppContext";
 
 const SessionRestorePrompt: React.FC = () => {
   const {
@@ -8,6 +8,8 @@ const SessionRestorePrompt: React.FC = () => {
     restoreSession,
     dismissRestorePrompt,
   } = useSessionRestore();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
 
   if (!showRestorePrompt) return null;
 
@@ -25,6 +27,21 @@ const SessionRestorePrompt: React.FC = () => {
     return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
   };
 
+  // Theme-aware classes
+  const containerBg = isDark
+    ? "bg-gray-800/90 border-indigo-500/30"
+    : "bg-white/95 border-indigo-300/50";
+
+  const titleColor = isDark ? "text-white" : "text-gray-900";
+  const descColor = isDark ? "text-gray-400" : "text-gray-600";
+  const dismissBtnColor = isDark
+    ? "text-gray-400 hover:text-white hover:bg-gray-700"
+    : "text-gray-500 hover:text-gray-900 hover:bg-gray-100";
+  const closeBtnColor = isDark
+    ? "text-gray-400 hover:text-white"
+    : "text-gray-400 hover:text-gray-900";
+  const ringOffset = isDark ? "focus:ring-offset-gray-800" : "focus:ring-offset-white";
+
   return (
     <div
       className="fixed bottom-20 right-4 z-40 max-w-sm animate-fade-in-up"
@@ -32,7 +49,7 @@ const SessionRestorePrompt: React.FC = () => {
       aria-labelledby="restore-title"
       aria-describedby="restore-desc"
     >
-      <div className="glass backdrop-blur-md rounded-xl border border-indigo-500/30 shadow-xl p-4 bg-gray-800/90">
+      <div className={`glass backdrop-blur-md rounded-xl border shadow-xl p-4 ${containerBg}`}>
         <div className="flex items-start gap-3">
           {/* Icon */}
           <div className="flex-shrink-0 w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center">
@@ -54,10 +71,10 @@ const SessionRestorePrompt: React.FC = () => {
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <h3 id="restore-title" className="text-sm font-medium text-white">
+            <h3 id="restore-title" className={`text-sm font-medium ${titleColor}`}>
               Resume Previous Session?
             </h3>
-            <p id="restore-desc" className="text-xs text-gray-400 mt-1">
+            <p id="restore-desc" className={`text-xs mt-1 ${descColor}`}>
               You have unsaved work from {formatTime(savedSessionTime)}. Would you like
               to continue where you left off?
             </p>
@@ -66,13 +83,13 @@ const SessionRestorePrompt: React.FC = () => {
             <div className="flex gap-2 mt-3">
               <button
                 onClick={restoreSession}
-                className="px-3 py-1.5 text-xs font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                className={`px-3 py-1.5 text-xs font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${ringOffset}`}
               >
                 Restore
               </button>
               <button
                 onClick={dismissRestorePrompt}
-                className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 ${dismissBtnColor}`}
               >
                 Start Fresh
               </button>
@@ -82,7 +99,7 @@ const SessionRestorePrompt: React.FC = () => {
           {/* Close button */}
           <button
             onClick={dismissRestorePrompt}
-            className="flex-shrink-0 p-1 text-gray-400 hover:text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
+            className={`flex-shrink-0 p-1 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 ${closeBtnColor}`}
             aria-label="Dismiss"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

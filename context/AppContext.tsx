@@ -16,7 +16,6 @@ interface MusicState {
   songConcept: string;
   instrumentalUrl: string;
   vocalUrl: string;
-  currentView: string;
 }
 
 interface AppState {
@@ -194,7 +193,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         songConcept,
         instrumentalUrl,
         vocalUrl,
-        currentView: "",
       });
     }, 1000);
 
@@ -260,17 +258,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   }, [theme]);
 
   // Toast handlers
+  // Note: Duration handling is done in ToastItem component to allow exit animation
   const addToast = useCallback((toast: Omit<Toast, "id">) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     const newToast: Toast = { ...toast, id };
     setToasts((prev) => [...prev, newToast]);
-
-    const duration = toast.duration ?? 5000;
-    if (duration > 0) {
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, duration);
-    }
   }, []);
 
   const removeToast = useCallback((id: string) => {
