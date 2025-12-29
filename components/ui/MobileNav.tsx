@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback } from "react";
+import { useTouchGestures } from "../../hooks/useTouchGestures";
 
 // Inline SVG Icons
 const MusicIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -160,8 +161,16 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   isDarkMode,
   onToggleTheme,
 }) => {
-  const navRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
   const firstFocusableRef = useRef<HTMLButtonElement>(null);
+
+  // Swipe gesture to close nav (swipe left to close)
+  const { ref: swipeRef } = useTouchGestures<HTMLElement>({
+    onSwipeLeft: onClose,
+  }, {
+    threshold: 50,
+    disabled: !isOpen,
+  });
 
   // Get all focusable elements within the nav
   const getFocusableElements = useCallback(() => {
@@ -245,8 +254,12 @@ export const MobileNav: React.FC<MobileNavProps> = ({
 
       {/* Navigation drawer */}
       <nav
-        ref={navRef}
-        className={`fixed inset-y-0 left-0 w-72 border-r z-50 mobile-nav-enter ${
+        ref={(el) => {
+          // Combine refs
+          (navRef as React.MutableRefObject<HTMLElement | null>).current = el;
+          (swipeRef as React.MutableRefObject<HTMLElement | null>).current = el;
+        }}
+        className={`fixed inset-y-0 left-0 w-72 border-r z-50 mobile-nav-enter touch-action-manipulation no-tap-highlight ${
           isDarkMode
             ? "bg-gray-900 border-gray-700/50"
             : "bg-white border-gray-200/50"
@@ -270,7 +283,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
           <button
             ref={firstFocusableRef}
             onClick={onClose}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-2.5 rounded-lg transition-colors touch-target touch-action-manipulation touch-active ${
               isDarkMode ? "hover:bg-gray-800" : "hover:bg-gray-100"
             }`}
             aria-label="Close navigation"
@@ -289,6 +302,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
               onClick={() => handleNavClick(item.id)}
               className={`
                 w-full flex items-center gap-3 p-3 rounded-xl transition-all
+                touch-target-lg touch-action-manipulation touch-active
                 ${
                   currentSection === item.id
                     ? "bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30"
@@ -377,14 +391,14 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   );
 };
 
-// Hamburger button component
+// Hamburger button component with touch-friendly sizing
 export const HamburgerButton: React.FC<{
   onClick: () => void;
   className?: string;
 }> = ({ onClick, className = "" }) => (
   <button
     onClick={onClick}
-    className={`p-2 rounded-lg hover:bg-gray-500/20 transition-colors ${className}`}
+    className={`p-2.5 rounded-lg hover:bg-gray-500/20 transition-colors touch-target touch-action-manipulation touch-active ${className}`}
     aria-label="Open navigation menu"
     aria-haspopup="dialog"
   >

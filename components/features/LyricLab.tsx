@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Page from "../ui/Page";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
+import ErrorDisplay from "../ui/ErrorDisplay";
 import {
   analyzeRhymeAndMeter,
   generateLineAlternatives,
 } from "../../services/geminiService";
+import { useUndoRedoWithKeyboard } from "../../hooks/useUndoRedo";
+import { useToast } from "../../context/AppContext";
 
 interface LyricLabProps {
   initialLyrics: string;
@@ -16,42 +19,71 @@ const LyricLab: React.FC<LyricLabProps> = ({
   initialLyrics,
   onUpdateLyrics,
 }) => {
-  const [lines, setLines] = useState<string[]>([]);
+  // Use undo/redo for lyrics with keyboard shortcuts
+  const {
+    state: lines,
+    set: setLines,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    reset: resetHistory,
+  } = useUndoRedoWithKeyboard<string[]>(
+    initialLyrics ? initialLyrics.split("\n") : [],
+    { maxHistory: 50, debounceMs: 500 }
+  );
+
   const [selectedLineIndex, setSelectedLineIndex] = useState<number | null>(
     null,
   );
   const [analysis, setAnalysis] = useState<string>("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<unknown>(null);
   const [alternatives, setAlternatives] = useState<string[]>([]);
   const [isGeneratingAlts, setIsGeneratingAlts] = useState(false);
+  const [alternativesError, setAlternativesError] = useState<unknown>(null);
   const [rewriteGoal, setRewriteGoal] = useState("Improve Rhyme");
 
+  const { addToast } = useToast();
+
+  // Sync with parent when lines change
+  useEffect(() => {
+    onUpdateLyrics(lines.join("\n"));
+  }, [lines, onUpdateLyrics]);
+
+  // Reset history when initialLyrics changes externally
   useEffect(() => {
     if (initialLyrics) {
-      setLines(initialLyrics.split("\n"));
+      const newLines = initialLyrics.split("\n");
+      // Only reset if significantly different (not just from our own updates)
+      if (JSON.stringify(newLines) !== JSON.stringify(lines)) {
+        resetHistory(newLines);
+      }
     }
-  }, [initialLyrics]);
+  }, [initialLyrics]); // Intentionally not including lines/resetHistory to avoid loops
 
-  const handleLineClick = async (index: number) => {
+  const handleLineClick = useCallback(async (index: number) => {
     setSelectedLineIndex(index);
     setAnalysis("");
     setAlternatives([]);
+    setAnalysisError(null);
 
     setIsAnalyzing(true);
     try {
-      const result = await analyzeRhymeAndMeter(lines[index], initialLyrics);
+      const result = await analyzeRhymeAndMeter(lines[index], lines.join("\n"));
       setAnalysis(result);
     } catch (e) {
       console.error(e);
-      setAnalysis("Failed to analyze line.");
+      setAnalysisError(e);
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, [lines]);
 
-  const handleGenerateAlternatives = async () => {
+  const handleGenerateAlternatives = useCallback(async () => {
     if (selectedLineIndex === null) return;
     setIsGeneratingAlts(true);
+    setAlternativesError(null);
     try {
       const alts = await generateLineAlternatives(
         lines[selectedLineIndex],
@@ -60,25 +92,40 @@ const LyricLab: React.FC<LyricLabProps> = ({
       setAlternatives(alts);
     } catch (e) {
       console.error(e);
+      setAlternativesError(e);
     } finally {
       setIsGeneratingAlts(false);
     }
-  };
+  }, [selectedLineIndex, lines, rewriteGoal]);
 
-  const handleApplyAlternative = (alt: string) => {
+  const handleApplyAlternative = useCallback((alt: string) => {
     if (selectedLineIndex === null) return;
     const newLines = [...lines];
     newLines[selectedLineIndex] = alt;
     setLines(newLines);
-    onUpdateLyrics(newLines.join("\n"));
-    setAlternatives([]); // Clear options
-  };
+    setAlternatives([]);
+    addToast({
+      type: "success",
+      title: "Line Updated",
+      message: "Press Ctrl+Z to undo",
+      duration: 3000,
+    });
+  }, [selectedLineIndex, lines, setLines, addToast]);
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     setLines(text.split("\n"));
-    onUpdateLyrics(text);
-  };
+  }, [setLines]);
+
+  const handleUndo = useCallback(() => {
+    undo();
+    addToast({ type: "info", title: "Undone", duration: 2000 });
+  }, [undo, addToast]);
+
+  const handleRedo = useCallback(() => {
+    redo();
+    addToast({ type: "info", title: "Redone", duration: 2000 });
+  }, [redo, addToast]);
 
   return (
     <Page
@@ -87,7 +134,35 @@ const LyricLab: React.FC<LyricLabProps> = ({
     >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-[75vh]">
         <Card className="flex flex-col h-full">
-          <h3 className="text-xl font-semibold mb-4">Editor</h3>
+          {/* Header with undo/redo buttons */}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold">Editor</h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleUndo}
+                disabled={!canUndo}
+                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                title="Undo (Ctrl+Z)"
+                aria-label="Undo"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                </svg>
+              </button>
+              <button
+                onClick={handleRedo}
+                disabled={!canRedo}
+                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                title="Redo (Ctrl+Shift+Z)"
+                aria-label="Redo"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6" />
+                </svg>
+              </button>
+              <span className="text-xs text-gray-500 ml-2">Ctrl+Z / Ctrl+Shift+Z</span>
+            </div>
+          </div>
           <div className="flex-1 overflow-y-auto bg-gray-900/50 rounded-lg p-4 font-mono text-lg leading-relaxed">
             {lines.map((line, i) => (
               <div
@@ -120,6 +195,13 @@ const LyricLab: React.FC<LyricLabProps> = ({
                 <p className="text-gray-400 animate-pulse">
                   Analyzing meter and rhyme...
                 </p>
+              ) : analysisError ? (
+                <ErrorDisplay
+                  error={analysisError}
+                  context="analyze the selected line"
+                  onRetry={() => handleLineClick(selectedLineIndex)}
+                  onDismiss={() => setAnalysisError(null)}
+                />
               ) : (
                 <div className="prose prose-invert prose-sm">
                   <p className="text-gray-300 whitespace-pre-wrap">
@@ -160,6 +242,15 @@ const LyricLab: React.FC<LyricLabProps> = ({
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-2">
+              {alternativesError && (
+                <ErrorDisplay
+                  error={alternativesError}
+                  context="generate alternative lines"
+                  onRetry={handleGenerateAlternatives}
+                  onDismiss={() => setAlternativesError(null)}
+                  className="mb-4"
+                />
+              )}
               {alternatives.map((alt, i) => (
                 <div
                   key={i}
@@ -176,7 +267,7 @@ const LyricLab: React.FC<LyricLabProps> = ({
                   </Button>
                 </div>
               ))}
-              {alternatives.length === 0 && !isGeneratingAlts && (
+              {alternatives.length === 0 && !isGeneratingAlts && !alternativesError && (
                 <p className="text-gray-500 italic text-center mt-8">
                   Select a line and goal to generate options.
                 </p>

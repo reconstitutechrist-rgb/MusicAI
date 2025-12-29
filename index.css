@@ -731,3 +731,173 @@ a:focus-visible {
     touch-action: none;
   }
 }
+
+/* ========================================
+   MOBILE UX UTILITIES
+   ======================================== */
+
+/* Touch target classes */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.touch-target-lg {
+  min-width: 48px;
+  min-height: 48px;
+}
+
+/* Remove tap highlight on mobile (applies where desired) */
+.no-tap-highlight {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Touch manipulation for faster taps */
+.touch-action-manipulation {
+  touch-action: manipulation;
+}
+
+/* Smooth momentum scrolling on iOS */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Prevent pull-to-refresh on specific elements */
+.no-overscroll {
+  overscroll-behavior: none;
+}
+
+/* Safe area padding for notched devices */
+.safe-area-inset {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Mobile-friendly horizontal scroll container */
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scroll-snap-item {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* Swipe hint animation */
+@keyframes swipe-hint {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(-10px);
+    opacity: 0.5;
+  }
+}
+
+.swipe-hint {
+  animation: swipe-hint 2s ease-in-out infinite;
+}
+
+/* Pull-to-refresh indicator */
+@keyframes pull-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pull-refresh-spin {
+  animation: pull-spin 1s linear infinite;
+}
+
+/* Mobile-specific media queries */
+@media (max-width: 640px) {
+  /* Larger touch targets on small screens */
+  .sm\:touch-target {
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  /* Stack horizontal layouts on mobile */
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+
+  /* Full-width buttons on mobile */
+  .mobile-full-width {
+    width: 100% !important;
+  }
+
+  /* Reduce padding on mobile */
+  .mobile-compact {
+    padding: 0.75rem !important;
+  }
+
+  /* Hide on mobile (already exists in Tailwind but for custom use) */
+  .mobile-hidden {
+    display: none !important;
+  }
+}
+
+/* Tablet-specific */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .tablet-touch-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Focus visible for keyboard users (not touch) */
+@media (pointer: fine) {
+  .focus-ring:focus-visible {
+    outline: 2px solid #818cf8;
+    outline-offset: 2px;
+  }
+}
+
+/* Hover only on devices that support it */
+@media (hover: hover) and (pointer: fine) {
+  .hover-supported:hover {
+    transform: scale(1.02);
+  }
+}
+
+/* No hover effects on touch devices */
+@media (hover: none) {
+  .hover-lift:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* Active state for touch devices */
+@media (pointer: coarse) {
+  .touch-active:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .swipe-hint,
+  .pull-refresh-spin {
+    animation: none;
+  }
+
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

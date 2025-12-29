@@ -573,7 +573,6 @@ const MusicVideoGenerator: React.FC<MusicVideoGeneratorProps> = ({
         role: "model",
         text: "I've generated the full video based on our concept. Take a look! You can continue our conversation to refine the prompts and regenerate it if you'd like.",
       };
-      // FIX: The `set` function from the `useUndoRedo` hook expects the new state directly, not an updater function.
       setChatMessages([...chatMessages, finalMessage]);
     } else {
       setGenerationState("refining");
