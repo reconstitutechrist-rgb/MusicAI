@@ -18,6 +18,21 @@ interface MusicState {
   vocalUrl: string;
 }
 
+// Recent project types
+export interface RecentProject {
+  id: string;
+  type: "lyrics" | "instrumental" | "vocal" | "project";
+  title: string;
+  preview?: string;
+  timestamp: number;
+  data?: {
+    lyrics?: string;
+    concept?: string;
+    instrumentalUrl?: string;
+    vocalUrl?: string;
+  };
+}
+
 interface AppState {
   // Theme
   theme: Theme;
@@ -52,6 +67,13 @@ interface AppState {
   toasts: Toast[];
   addToast: (toast: Omit<Toast, "id">) => void;
   removeToast: (id: string) => void;
+
+  // Recent projects
+  recentProjects: RecentProject[];
+  addRecentProject: (project: Omit<RecentProject, "id" | "timestamp">) => void;
+  removeRecentProject: (id: string) => void;
+  clearRecentProjects: () => void;
+  loadRecentProject: (project: RecentProject) => void;
 }
 
 interface WorkflowStep {
@@ -78,7 +100,9 @@ const defaultWorkflowSteps: WorkflowStep[] = [
 
 // Storage keys
 const MUSIC_STATE_KEY = "muse-music-state";
+const RECENT_PROJECTS_KEY = "muse-recent-projects";
 const STORAGE_VERSION = 1;
+const MAX_RECENT_PROJECTS = 10;
 
 interface StoredMusicState {
   state: MusicState;
@@ -124,6 +148,26 @@ function saveMusicState(state: MusicState): void {
     localStorage.setItem(MUSIC_STATE_KEY, JSON.stringify(data));
   } catch (error) {
     console.warn("Failed to save music state:", error);
+  }
+}
+
+// Helper to load recent projects from localStorage
+function loadRecentProjects(): RecentProject[] {
+  try {
+    const stored = localStorage.getItem(RECENT_PROJECTS_KEY);
+    if (!stored) return [];
+    return JSON.parse(stored);
+  } catch {
+    return [];
+  }
+}
+
+// Helper to save recent projects to localStorage
+function saveRecentProjects(projects: RecentProject[]): void {
+  try {
+    localStorage.setItem(RECENT_PROJECTS_KEY, JSON.stringify(projects));
+  } catch (error) {
+    console.warn("Failed to save recent projects:", error);
   }
 }
 
@@ -240,6 +284,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   // Toast state
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  // Recent projects state
+  const [recentProjects, setRecentProjects] = useState<RecentProject[]>(() => loadRecentProjects());
+
   // Theme handlers
   const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
@@ -267,6 +314,48 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  // Recent projects handlers
+  const addRecentProject = useCallback((project: Omit<RecentProject, "id" | "timestamp">) => {
+    const newProject: RecentProject = {
+      ...project,
+      id: `project-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+      timestamp: Date.now(),
+    };
+
+    setRecentProjects((prev) => {
+      // Remove duplicates with same title and type
+      const filtered = prev.filter(
+        (p) => !(p.title === newProject.title && p.type === newProject.type)
+      );
+      // Add new project at the beginning and limit to max
+      const updated = [newProject, ...filtered].slice(0, MAX_RECENT_PROJECTS);
+      saveRecentProjects(updated);
+      return updated;
+    });
+  }, []);
+
+  const removeRecentProject = useCallback((id: string) => {
+    setRecentProjects((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      saveRecentProjects(updated);
+      return updated;
+    });
+  }, []);
+
+  const clearRecentProjects = useCallback(() => {
+    setRecentProjects([]);
+    localStorage.removeItem(RECENT_PROJECTS_KEY);
+  }, []);
+
+  const loadRecentProjectData = useCallback((project: RecentProject) => {
+    if (project.data) {
+      if (project.data.lyrics) setGeneratedLyrics(project.data.lyrics);
+      if (project.data.concept) setSongConcept(project.data.concept);
+      if (project.data.instrumentalUrl) setInstrumentalUrl(project.data.instrumentalUrl);
+      if (project.data.vocalUrl) setVocalUrl(project.data.vocalUrl);
+    }
   }, []);
 
   // Update workflow step completion when state changes
@@ -320,6 +409,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     toasts,
     addToast,
     removeToast,
+    recentProjects,
+    addRecentProject,
+    removeRecentProject,
+    clearRecentProjects,
+    loadRecentProject: loadRecentProjectData,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
@@ -389,5 +483,22 @@ export const useMusicState = () => {
     setInstrumentalUrl,
     vocalUrl,
     setVocalUrl,
+  };
+};
+
+export const useRecentProjects = () => {
+  const {
+    recentProjects,
+    addRecentProject,
+    removeRecentProject,
+    clearRecentProjects,
+    loadRecentProject,
+  } = useApp();
+  return {
+    recentProjects,
+    addRecentProject,
+    removeRecentProject,
+    clearRecentProjects,
+    loadRecentProject,
   };
 };

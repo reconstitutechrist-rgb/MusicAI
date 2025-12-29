@@ -14,6 +14,7 @@ const ThemeToggle: React.FC = () => {
         group
       "
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+      title={`Toggle theme (Ctrl+Shift+T)`}
     >
       {/* Sun icon */}
       <svg

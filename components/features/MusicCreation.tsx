@@ -27,7 +27,7 @@ import { useLiveRegion } from "../ui/LiveRegion";
 import { useToastHelpers } from "../ui/Toast";
 import CreateShowcaseModal from "../community/CreateShowcaseModal";
 import { useAuth } from "../../context/AuthContext";
-import { useTheme } from "../../context/AppContext";
+import { useTheme, useRecentProjects } from "../../context/AppContext";
 
 // --- Audio Helper Functions ---
 
@@ -432,6 +432,9 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
   // Theme
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  // Recent projects
+  const { addRecentProject } = useRecentProjects();
 
   // State
   const [chatMessages, setChatMessages] =
@@ -852,6 +855,19 @@ const MusicCreation: React.FC<MusicCreationProps> = ({
 
   const handleProceed = () => {
     if (latestSongData) {
+      // Add to recent projects
+      addRecentProject({
+        type: latestAudioUrl ? "instrumental" : "lyrics",
+        title: latestSongData.title || latestSongData.style || "Untitled Song",
+        preview: latestSongData.lyrics.slice(0, 100),
+        data: {
+          lyrics: latestSongData.lyrics,
+          concept: latestSongData.style,
+          instrumentalUrl: latestAudioUrl,
+          vocalUrl: latestVocalUrl,
+        },
+      });
+
       // Pass both lyrics AND the instrumental audio URL if it exists
       onLyricsGenerated(
         latestSongData.lyrics,

@@ -3,6 +3,7 @@ import {
   Sidebar,
   SidebarItem,
   SidebarSection,
+  RecentProjectsSection,
 } from "./components/layout/Sidebar";
 import {
   validateEnvironment,
@@ -36,7 +37,9 @@ import ThemeToggle from "./components/ui/ThemeToggle";
 import SessionRestorePrompt from "./components/ui/SessionRestorePrompt";
 import Breadcrumb, { BreadcrumbItem, HomeIcon } from "./components/ui/Breadcrumb";
 import WorkflowProgress, { MUSIC_CREATION_STEPS } from "./components/ui/WorkflowProgress";
-import { useTheme, useMusicState, useWorkflow } from "./context/AppContext";
+import { useTheme, useMusicState, useWorkflow, useRecentProjects, RecentProject } from "./context/AppContext";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { ShortcutsModal } from "./components/ui/ShortcutsModal";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LiveRegionProvider } from "./components/ui/LiveRegion";
 import {
@@ -78,6 +81,24 @@ const App: React.FC = () => {
   const [startInKaraokeMode, setStartInKaraokeMode] = useState(false);
   const [envValidation, setEnvValidation] = useState<EnvValidationResult | null>(null);
   const [showEnvBanner, setShowEnvBanner] = useState(true);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+
+  // Get recent projects
+  const { loadRecentProject } = useRecentProjects();
+
+  // Setup keyboard shortcuts
+  const { getShortcutsByCategory } = useKeyboardShortcuts({
+    onShowHelp: () => setShowShortcutsModal(true),
+    onToggleTheme: () => setTheme(theme === "dark" ? "light" : "dark"),
+    onNavigate: (view) => {
+      // View names are passed directly from useKeyboardShortcuts
+      const validViews: View[] = ["create", "lab", "produce", "remix", "analyze", "video", "market", "assist", "community"];
+      if (validViews.includes(view as View)) {
+        setActiveView(view as View);
+      }
+    },
+    enabled: !mobileMenuOpen && !showShortcutsModal,
+  });
 
   // Validate environment on app load
   useEffect(() => {
@@ -218,6 +239,25 @@ const App: React.FC = () => {
     }
   }, [startInKaraokeMode, activeView]);
 
+  // Handle recent project click
+  const handleRecentProjectClick = useCallback((project: RecentProject) => {
+    loadRecentProject(project);
+    // Navigate to appropriate view based on project type
+    switch (project.type) {
+      case "lyrics":
+        setActiveView("lab");
+        break;
+      case "instrumental":
+      case "vocal":
+        setActiveView("produce");
+        break;
+      case "project":
+      default:
+        setActiveView("create");
+        break;
+    }
+  }, [loadRecentProject]);
+
   const renderView = () => {
     switch (activeView) {
       case "create":
@@ -296,6 +336,13 @@ const App: React.FC = () => {
 
               {/* Session restore prompt */}
               <SessionRestorePrompt />
+
+              {/* Keyboard shortcuts modal */}
+              <ShortcutsModal
+                isOpen={showShortcutsModal}
+                onClose={() => setShowShortcutsModal(false)}
+                getShortcutsByCategory={getShortcutsByCategory}
+              />
 
               {/* Environment validation banner */}
               {showEnvBanner && envValidation && (!envValidation.isValid || envValidation.warnings.length > 0) && (
@@ -408,18 +455,21 @@ const App: React.FC = () => {
                     text="Compose"
                     active={activeView === "create"}
                     onClick={() => setActiveView("create")}
+                    shortcut="1"
                   />
                   <SidebarItem
                     icon={<LyricLabIcon className="h-5 w-5" />}
                     text="Lyric Lab"
                     active={activeView === "lab"}
                     onClick={() => setActiveView("lab")}
+                    shortcut="2"
                   />
                   <SidebarItem
                     icon={<AudioProductionIcon className="h-5 w-5" />}
                     text="Production"
                     active={activeView === "produce"}
                     onClick={() => setActiveView("produce")}
+                    shortcut="3"
                   />
 
                   <SidebarSection title="Tools" />
@@ -428,12 +478,14 @@ const App: React.FC = () => {
                     text="Remix Studio"
                     active={activeView === "remix"}
                     onClick={() => setActiveView("remix")}
+                    shortcut="4"
                   />
                   <SidebarItem
                     icon={<AnalyzerIcon className="h-5 w-5" />}
                     text="Audio Critic"
                     active={activeView === "analyze"}
                     onClick={() => setActiveView("analyze")}
+                    shortcut="5"
                   />
 
                   <SidebarSection title="Promotion" />
@@ -442,24 +494,34 @@ const App: React.FC = () => {
                     text="Video"
                     active={activeView === "video"}
                     onClick={() => setActiveView("video")}
+                    shortcut="6"
                   />
                   <SidebarItem
                     icon={<MarketingIcon className="h-5 w-5" />}
                     text="Market"
                     active={activeView === "market"}
                     onClick={() => setActiveView("market")}
+                    shortcut="7"
                   />
                   <SidebarItem
                     icon={<AssistantIcon className="h-5 w-5" />}
                     text="Assistant"
                     active={activeView === "assist"}
                     onClick={() => setActiveView("assist")}
+                    shortcut="8"
                   />
                   <SidebarItem
                     icon={<CommunityIcon className="h-5 w-5" />}
                     text="Community"
                     active={activeView === "community"}
                     onClick={() => setActiveView("community")}
+                    shortcut="9"
+                  />
+
+                  {/* Recent Projects Section */}
+                  <RecentProjectsSection
+                    onProjectClick={handleRecentProjectClick}
+                    maxItems={5}
                   />
 
                   {/* Workflow Progress */}
@@ -492,6 +554,24 @@ const App: React.FC = () => {
                       size="sm"
                       className="md:hidden"
                     />
+                  </div>
+
+                  {/* Keyboard shortcuts hint */}
+                  <div className="px-4 py-2 hidden md:block">
+                    <button
+                      onClick={() => setShowShortcutsModal(true)}
+                      className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors ${
+                        theme === "dark"
+                          ? "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+                          : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                      }`}
+                      title="View all keyboard shortcuts"
+                    >
+                      <kbd className={`px-1.5 py-0.5 rounded font-mono text-[10px] ${
+                        theme === "dark" ? "bg-gray-800" : "bg-gray-200"
+                      }`}>?</kbd>
+                      <span>Keyboard shortcuts</span>
+                    </button>
                   </div>
 
                   {/* Theme Toggle at bottom */}
